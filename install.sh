@@ -145,6 +145,7 @@ Restart=on-failure
 RestartSec=3
 NoNewPrivileges=yes
 ProtectSystem=full
+ReadWritePaths=/etc/hangar
 PrivateTmp=yes
 
 [Install]
