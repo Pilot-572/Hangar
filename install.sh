@@ -92,8 +92,15 @@ for i in $(seq 1 30); do
   sleep 1
 done
 
-# Detect the Proxmox host's own API URL (from the container's perspective)
-NODE_IP=$(hostname -I | awk '{print $1}')
+# Detect the Proxmox host's own API URL (from the container's perspective).
+# Prefer the bridge IP since the LXC sits on that bridge; reachability is guaranteed.
+# Fallback to first RFC1918 IP from `hostname -I`, since the bare command can return
+# the Tailscale CGNAT (100.64/10) IP first, which the LXC can't reach.
+NODE_IP=$(ip -4 -o addr show "$NET_BRIDGE" 2>/dev/null | awk '{print $4}' | cut -d/ -f1 | head -1)
+if [[ -z "$NODE_IP" ]]; then
+  NODE_IP=$(hostname -I | tr ' ' '\n' | grep -E '^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.)' | head -1)
+fi
+[[ -z "$NODE_IP" ]] && fail "Couldn't detect a LAN IP for the Proxmox host. Set NODE_IP=... and rerun."
 PROXMOX_URL="https://${NODE_IP}:8006"
 NODE_NAME=$(hostname -s)
 
