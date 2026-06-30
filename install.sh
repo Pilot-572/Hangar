@@ -8,12 +8,12 @@
 # user/token already exist, it reuses them.
 #
 # Tunables (set as env before running):
-#   CTID, HOSTNAME, STORAGE, TEMPLATE_STORAGE, NET_BRIDGE, MEMORY, CORES, ACCENT, REPO
+#   CTID, LXC_HOSTNAME, STORAGE, TEMPLATE_STORAGE, NET_BRIDGE, MEMORY, CORES, ACCENT, REPO
 
 set -euo pipefail
 
 CTID="${CTID:-}"
-HOSTNAME="${HOSTNAME:-hangar}"
+LXC_HOSTNAME="${LXC_HOSTNAME:-hangar}"
 STORAGE="${STORAGE:-local-lvm}"
 TEMPLATE_STORAGE="${TEMPLATE_STORAGE:-local}"
 NET_BRIDGE="${NET_BRIDGE:-vmbr0}"
@@ -72,9 +72,9 @@ done_ "Token created"
 if pct status "$CTID" >/dev/null 2>&1; then
   fail "CTID $CTID already exists. Set CTID=NNN and retry."
 fi
-info "Creating LXC $CTID ($HOSTNAME) on $STORAGE…"
+info "Creating LXC $CTID ($LXC_HOSTNAME) on $STORAGE…"
 pct create "$CTID" "$TEMPLATE_REF" \
-  --hostname "$HOSTNAME" \
+  --hostname "$LXC_HOSTNAME" \
   --memory "$MEMORY" \
   --cores "$CORES" \
   --net0 "name=eth0,bridge=$NET_BRIDGE,ip=dhcp" \
