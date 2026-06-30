@@ -1,0 +1,14 @@
+{
+  "name": "Hangar",
+  "short_name": "Hangar",
+  "description": "Mobile control panel for Proxmox",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a0b",
+  "theme_color": "#3b82f6",
+  "icons": [
+    { "src": "/static/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

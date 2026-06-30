@@ -1,0 +1,559 @@
+{% extends "base.html" %}
+{% block body %}
+<section class="settings-wrap">
+  <header class="settings-top">
+    <a href="/" class="back-link" aria-label="Back to dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </a>
+    <div class="settings-top-text">
+      <h2>Settings</h2>
+      <p>Customize Hangar and wire up Telegram notifications.</p>
+    </div>
+  </header>
+
+  {% if saved %}<div class="banner banner-ok">Settings saved.</div>{% endif %}
+  {% if error %}<div class="banner banner-err">{{ error }}</div>{% endif %}
+
+  <form method="POST" action="/settings" class="settings-form">
+
+    <article class="card">
+      <header class="card-head">
+        <h3>Appearance</h3>
+        <p>Theme color and how the interface feels.</p>
+      </header>
+
+      <div class="row">
+        <div class="row-label">
+          <span class="rl-title">Accent color</span>
+          <span class="rl-desc">Used for active states, buttons, links, and the app icon.</span>
+        </div>
+        <div class="row-control">
+          <label class="color-swatch">
+            <input type="color" id="accent-input" value="{{ cfg_accent }}">
+          </label>
+          <input type="text" name="accent" id="accent-hex" value="{{ cfg_accent }}"
+                 class="input input-hex mono" maxlength="7" pattern="#[0-9a-fA-F]{6}"
+                 spellcheck="false" autocomplete="off">
+          <button type="button" class="link-btn" id="accent-reset">Reset</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="row-label">
+          <span class="rl-title">Color scheme</span>
+          <span class="rl-desc">Override the OS preference, or follow it automatically.</span>
+        </div>
+        <div class="row-control">
+          <div class="segmented" role="radiogroup" aria-label="Color scheme">
+            <input type="radio" name="scheme" id="s-auto"  value="auto"  {% if cfg_scheme=='auto'  %}checked{% endif %}>
+            <label for="s-auto">Auto</label>
+            <input type="radio" name="scheme" id="s-light" value="light" {% if cfg_scheme=='light' %}checked{% endif %}>
+            <label for="s-light">Light</label>
+            <input type="radio" name="scheme" id="s-dark"  value="dark"  {% if cfg_scheme=='dark'  %}checked{% endif %}>
+            <label for="s-dark">Dark</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="row-label">
+          <span class="rl-title">Hold-to-confirm</span>
+          <span class="rl-desc">How long Stop / Restart must be held before firing.</span>
+        </div>
+        <div class="row-control row-control-block">
+          <input type="range" name="hold_ms" id="hold-input"
+                 min="300" max="3000" step="100" value="{{ cfg_hold_ms }}">
+          <div class="slider-meta">
+            <span class="dim">Fast · 300 ms</span>
+            <span class="mono slider-value"><span id="hold-readout">{{ cfg_hold_ms }}</span> ms</span>
+            <span class="dim">Slow · 3 s</span>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="card">
+      <header class="card-head">
+        <h3>Telegram notifications</h3>
+        <p>
+          Make a bot with <a href="https://t.me/botfather" target="_blank" rel="noopener">@BotFather</a>,
+          send it a message, then visit
+          <code>api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code> to find your <code>chat_id</code>.
+        </p>
+      </header>
+
+      <div class="stacked-field">
+        <label for="tg-bot" class="rl-title">Bot token</label>
+        <input id="tg-bot" type="password" name="tg_bot_token" autocomplete="off"
+               class="input mono" placeholder="123456789:AAH…"
+               value="{{ cfg_telegram.bot_token or '' }}">
+      </div>
+
+      <div class="stacked-field">
+        <label for="tg-chat" class="rl-title">Chat ID</label>
+        <input id="tg-chat" type="text" name="tg_chat_id" autocomplete="off"
+               class="input mono" placeholder="-100123456789 or your user id"
+               value="{{ cfg_telegram.chat_id or '' }}">
+      </div>
+
+      <div class="stacked-field">
+        <span class="rl-title">Notify when</span>
+        {% set ev = cfg_telegram.events or {} %}
+        <ul class="event-list">
+          <li class="event ev-success">
+            <span class="event-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polygon points="6 3 20 12 6 21 6 3" fill="currentColor"/>
+              </svg>
+            </span>
+            <div class="event-text">
+              <span class="event-name">A VM starts</span>
+              <span class="event-desc">Sent after a Start succeeds.</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" name="tg_started" {% if ev.started %}checked{% endif %}>
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+            </label>
+          </li>
+          <li class="event ev-danger">
+            <span class="event-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/>
+              </svg>
+            </span>
+            <div class="event-text">
+              <span class="event-name">A VM stops</span>
+              <span class="event-desc">Sent after a graceful shutdown.</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" name="tg_stopped" {% if ev.stopped %}checked{% endif %}>
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+            </label>
+          </li>
+          <li class="event ev-warn">
+            <span class="event-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+              </svg>
+            </span>
+            <div class="event-text">
+              <span class="event-name">A VM restarts</span>
+              <span class="event-desc">Sent after a Restart succeeds.</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" name="tg_restarted" {% if ev.restarted %}checked{% endif %}>
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+            </label>
+          </li>
+          <li class="event ev-alert">
+            <span class="event-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </span>
+            <div class="event-text">
+              <span class="event-name">An action fails</span>
+              <span class="event-desc">Sent if Proxmox rejects an action.</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" name="tg_failed" {% if ev.failed %}checked{% endif %}>
+              <span class="switch-track"><span class="switch-thumb"></span></span>
+            </label>
+          </li>
+        </ul>
+      </div>
+
+      <div class="card-foot">
+        <button type="button" class="btn-ghost" id="test-telegram">Send test</button>
+      </div>
+    </article>
+
+    <div class="save-bar">
+      <button type="submit" class="save-btn">Save settings</button>
+    </div>
+  </form>
+</section>
+
+<style>
+  .settings-wrap { max-width: 38rem; margin: 0 auto; padding-bottom: 2rem; min-width: 0; }
+  .card { min-width: 0; }
+  .event-text { overflow: hidden; }
+  .event-name, .event-desc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .settings-top {
+    display: flex; align-items: center; gap: .85rem;
+    margin: .25rem 0 1.4rem;
+  }
+  .back-link {
+    width: 36px; height: 36px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 8px;
+    color: var(--text-2); text-decoration: none; flex-shrink: 0;
+    transition: background-color .15s, color .15s;
+  }
+  .back-link:hover { background: var(--surface); color: var(--text); }
+  .back-link svg { width: 18px; height: 18px; }
+  .settings-top-text h2 {
+    font-size: 22px; font-weight: 600; letter-spacing: -0.015em; margin: 0;
+  }
+  .settings-top-text p {
+    font-size: 13px; color: var(--text-2); margin-top: 2px; line-height: 1.45;
+  }
+
+  .banner {
+    padding: .65rem .9rem;
+    border-radius: var(--radius-sm);
+    font-size: 13px; font-weight: 500;
+    margin-bottom: 1rem;
+  }
+  .banner-ok {
+    background: color-mix(in srgb, var(--success) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--success) 35%, transparent);
+    color: var(--success);
+  }
+  .banner-err {
+    background: color-mix(in srgb, var(--danger) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
+    color: var(--danger);
+  }
+
+  .settings-form { display: flex; flex-direction: column; gap: 1rem; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.2rem 1.3rem 1.35rem;
+    box-shadow: var(--shadow-sm);
+  }
+  .card-head { margin-bottom: .9rem; }
+  .card-head h3 {
+    font-size: 16px; font-weight: 600; letter-spacing: -0.01em; margin: 0;
+  }
+  .card-head p {
+    margin-top: .25rem;
+    font-size: 12.5px; color: var(--text-2); line-height: 1.5;
+  }
+  .card-head a {
+    color: var(--text);
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: var(--accent);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+  }
+  .card-head a:hover { text-decoration-thickness: 3px; }
+  .card-head code {
+    font-family: 'Geist Mono', monospace; font-size: 11.5px;
+    background: var(--surface-2); padding: .05rem .35rem; border-radius: 4px;
+    color: var(--text);
+  }
+
+  /* row: label on left, control on right (stacks on mobile) */
+  .row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 1rem;
+    padding: .85rem 0;
+    border-top: 1px solid var(--border);
+  }
+  .row:first-of-type { border-top: none; padding-top: 0; }
+  .row:last-child { padding-bottom: 0; }
+  .row-label { min-width: 0; }
+  .rl-title { display: block; font-size: 13.5px; font-weight: 600; color: var(--text); }
+  .rl-desc  { display: block; font-size: 12px; color: var(--text-2); margin-top: 3px; line-height: 1.45; }
+  .row-control { display: flex; align-items: center; gap: .65rem; flex-shrink: 0; }
+  .row-control-block { display: flex; flex-direction: column; align-items: stretch; gap: .35rem; min-width: 16rem; }
+
+  @media (max-width: 560px) {
+    .row { grid-template-columns: 1fr; gap: .55rem; align-items: stretch; }
+    .row-control { justify-content: flex-start; }
+    .row-control-block { min-width: 0; }
+  }
+
+  /* color swatch */
+  .color-swatch {
+    position: relative; display: inline-block;
+    width: 44px; height: 44px;
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    overflow: hidden; cursor: pointer;
+    background: var(--accent);
+  }
+  .color-swatch input[type=color] {
+    position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;
+  }
+  .input-hex {
+    width: 7.5rem; height: 40px; padding: 0 .65rem;
+    font-size: 13px;
+    text-transform: lowercase;
+  }
+  .input-hex:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .link-btn {
+    font: inherit; font-size: 12px; color: var(--text-2);
+    background: none; border: none; padding: 0;
+    cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
+  }
+  .link-btn:hover { color: var(--text); }
+
+  /* segmented control */
+  .segmented {
+    display: inline-flex;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 3px;
+  }
+  .segmented input { position: absolute; opacity: 0; pointer-events: none; }
+  .segmented label {
+    padding: .45rem .85rem;
+    font-size: 13px; font-weight: 500;
+    color: var(--text-2); cursor: pointer;
+    border-radius: 7px;
+    user-select: none;
+    transition: background-color .15s, color .15s;
+  }
+  .segmented label:hover { color: var(--text); }
+  .segmented input:checked + label {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: var(--shadow-sm);
+  }
+  .segmented input:focus-visible + label {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* range slider */
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 6px; padding: 0; margin: 0;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 999px; outline: none; cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--accent);
+    border: 3px solid var(--surface);
+    box-shadow: 0 1px 3px rgba(0,0,0,.18);
+    cursor: pointer;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--accent);
+    border: 3px solid var(--surface);
+    cursor: pointer;
+  }
+  .slider-meta {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-top: .35rem;
+    font-size: 11px;
+  }
+  .slider-meta .dim { color: var(--text-3); }
+  .slider-value {
+    font-weight: 600; color: var(--text); font-size: 12.5px;
+  }
+
+  /* stacked field for telegram inputs */
+  .stacked-field {
+    display: flex; flex-direction: column; gap: .4rem;
+    margin-top: .85rem;
+  }
+  .stacked-field:first-of-type { margin-top: 0; }
+  .input {
+    height: 44px; padding: 0 .9rem;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 14px; font-family: 'Geist', sans-serif;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .input.mono { font-family: 'Geist Mono', monospace; font-size: 13px; }
+  .input::placeholder { color: var(--text-3); }
+  .input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  /* event list with switches */
+  .event-list {
+    list-style: none; padding: 0; margin: .4rem 0 0;
+    display: flex; flex-direction: column; gap: .4rem;
+  }
+  .event {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: .65rem;
+    padding: .65rem .75rem;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    transition: border-color .15s;
+  }
+  .event:has(input:checked) {
+    border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+    background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+  }
+  .event-icon {
+    width: 30px; height: 30px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-2);
+  }
+  .event-icon svg { width: 15px; height: 15px; }
+  .ev-success .event-icon { color: var(--success); }
+  .ev-danger  .event-icon { color: var(--danger); }
+  .ev-warn    .event-icon { color: var(--warn); }
+  .ev-alert   .event-icon { color: var(--warn); }
+  .event-text { display: flex; flex-direction: column; min-width: 0; }
+  .event-name { font-size: 13.5px; font-weight: 600; color: var(--text); }
+  .event-desc { font-size: 11.5px; color: var(--text-2); margin-top: 1px; }
+
+  .switch { position: relative; width: 38px; height: 22px; cursor: pointer; }
+  .switch input { position: absolute; opacity: 0; pointer-events: none; }
+  .switch-track {
+    position: absolute; inset: 0;
+    background: var(--border-strong);
+    border-radius: 999px;
+    transition: background-color .18s;
+  }
+  .switch-thumb {
+    position: absolute; top: 2px; left: 2px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: white;
+    box-shadow: 0 1px 2px rgba(0,0,0,.2);
+    transition: transform .18s;
+  }
+  .switch input:checked ~ .switch-track { background: var(--accent); }
+  .switch input:checked ~ .switch-track .switch-thumb { transform: translateX(16px); }
+
+  .card-foot {
+    margin-top: 1.1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: flex-end;
+  }
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+    font-weight: 600; font-size: 13.5px;
+    height: 40px; padding: 0 1rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background-color .15s, border-color .15s;
+  }
+  .btn-ghost:hover { background: var(--surface-2); border-color: var(--text-3); }
+  .btn-ghost:disabled { opacity: .55; cursor: progress; }
+
+  .save-bar {
+    position: sticky; bottom: 0;
+    background: color-mix(in srgb, var(--bg) 94%, transparent);
+    backdrop-filter: blur(8px);
+    padding: .85rem 0 1rem;
+    margin-top: .25rem;
+    border-top: 1px solid var(--border);
+  }
+  .save-btn {
+    width: 100%; height: 48px;
+    background: var(--accent); color: var(--accent-fg);
+    border: none; border-radius: var(--radius-sm);
+    font: inherit; font-size: 14.5px; font-weight: 600; letter-spacing: -0.005em;
+    cursor: pointer;
+    box-shadow: 0 4px 14px -4px color-mix(in srgb, var(--accent) 45%, transparent);
+    transition: filter .15s, transform .08s;
+  }
+  .save-btn:hover { filter: brightness(1.05); }
+  .save-btn:active { transform: translateY(1px); }
+</style>
+
+<script>
+(() => {
+  const colorEl = document.getElementById('accent-input');
+  const hexEl = document.getElementById('accent-hex');
+  const swatch = document.querySelector('.color-swatch');
+  const resetBtn = document.getElementById('accent-reset');
+
+  // Hex input is the source of truth. The native color picker rounds to its
+  // limited palette (e.g. #dfff1c → #dfff00) — never overwrite hex from picker
+  // on init; only when the user actually interacts with the picker.
+  const setSwatch = (val) => { if (swatch) swatch.style.background = val; };
+  const normaliseHex = (s) => {
+    s = (s || '').trim();
+    if (!s.startsWith('#')) s = '#' + s;
+    return s.toLowerCase();
+  };
+
+  if (hexEl) setSwatch(hexEl.value);
+  try { if (colorEl && hexEl) colorEl.value = hexEl.value; } catch (e) {}
+
+  if (colorEl) {
+    colorEl.addEventListener('input', () => {
+      const val = colorEl.value.toLowerCase();
+      if (hexEl) hexEl.value = val;
+      setSwatch(val);
+    });
+  }
+  if (hexEl) {
+    hexEl.addEventListener('input', () => {
+      const val = normaliseHex(hexEl.value);
+      if (/^#[0-9a-f]{6}$/.test(val)) {
+        try { if (colorEl) colorEl.value = val; } catch (e) {}
+        setSwatch(val);
+      }
+    });
+    hexEl.addEventListener('blur', () => {
+      hexEl.value = normaliseHex(hexEl.value);
+    });
+  }
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      const val = '#3b82f6';
+      if (hexEl) hexEl.value = val;
+      try { if (colorEl) colorEl.value = val; } catch (e) {}
+      setSwatch(val);
+    });
+  }
+
+  const range = document.getElementById('hold-input');
+  const out   = document.getElementById('hold-readout');
+  if (range && out) {
+    range.addEventListener('input', () => { out.textContent = range.value; });
+  }
+
+  const btn = document.getElementById('test-telegram');
+  if (btn) {
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      const orig = btn.textContent;
+      btn.textContent = 'Sending…';
+      try {
+        const r = await fetch('/settings/telegram/test', { method: 'POST' });
+        const j = await r.json().catch(() => ({ok: false, error: 'Bad response'}));
+        showToast(j.ok ? 'Test message sent ✓' : (j.error || 'Test failed'), !j.ok);
+      } catch (e) {
+        showToast('Network error', true);
+      }
+      btn.disabled = false;
+      btn.textContent = orig;
+    });
+  }
+})();
+</script>
+{% endblock %}

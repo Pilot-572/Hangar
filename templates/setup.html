@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block body %}
+<section class="section" style="max-width: 28rem; margin: 0 auto;">
+  <div style="margin-bottom: 1.25rem;">
+    <h2 style="font-size:18px; font-weight:600; letter-spacing:-0.01em; margin-bottom:.35rem; text-transform:none; color:var(--text);">Connect to Proxmox</h2>
+    <p style="font-size: 13px; color: var(--text-2); line-height: 1.5;">
+      Paste your Proxmox URL and an API token. Need a token? On any Proxmox node's shell:
+    </p>
+    <pre style="margin-top: .65rem; padding: .75rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: 'Geist Mono', monospace; font-size: 11.5px; color: var(--text-2); overflow-x: auto; line-height: 1.45;">pveum acl modify / -user hangar@pam -role Administrator
+pveum user token add hangar@pam hangar-token --privsep 0</pre>
+    <p style="font-size: 12px; color: var(--text-3); margin-top: .5rem;">
+      Copy the <code style="font-family:'Geist Mono',monospace; color:var(--text-2);">value</code> field it prints — that's your token secret.
+    </p>
+  </div>
+
+  {% if error %}
+  <div class="errors" style="margin-bottom: 1rem;">
+    <div class="e">{{ error }}</div>
+  </div>
+  {% endif %}
+
+  <form method="POST" action="/setup" class="setup-form">
+    <label class="field">
+      <span class="field-label">Proxmox URL</span>
+      <input name="url" type="url" required placeholder="https://192.168.1.10:8006"
+             value="{{ (form and form.url) or '' }}">
+    </label>
+    <label class="field">
+      <span class="field-label">Token ID</span>
+      <input name="token_id" type="text" required placeholder="hangar@pam!hangar-token"
+             value="{{ (form and form.token_id) or '' }}">
+    </label>
+    <label class="field">
+      <span class="field-label">Token secret</span>
+      <input name="token_secret" type="password" required placeholder="(the value field from pveum)"
+             autocomplete="off">
+    </label>
+    <label class="field">
+      <span class="field-label">Display name <span class="field-hint">optional</span></span>
+      <input name="name" type="text" placeholder="proxmox"
+             value="{{ (form and form.name) or 'proxmox' }}">
+    </label>
+    <label class="checkbox">
+      <input name="verify_ssl" type="checkbox" {% if form and form.verify_ssl %}checked{% endif %}>
+      <span>Verify SSL certificate (uncheck for typical homelab self-signed)</span>
+    </label>
+    <button type="submit" class="btn btn-primary btn-go" style="margin-top:.65rem; width:100%;">
+      <span>Connect</span>
+    </button>
+  </form>
+</section>
+
+<style>
+  .setup-form { display: flex; flex-direction: column; gap: .85rem; }
+  .field { display: flex; flex-direction: column; gap: .35rem; }
+  .field-label {
+    font-size: 12px; font-weight: 600; color: var(--text);
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .field-hint { font-weight: 400; color: var(--text-3); font-size: 11px; }
+  .field input {
+    height: 42px; padding: 0 .8rem;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 14px;
+    font-family: 'Geist Mono', ui-monospace, monospace;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .field input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .checkbox {
+    display: flex; align-items: flex-start; gap: .55rem;
+    font-size: 12.5px; color: var(--text-2); line-height: 1.4;
+    cursor: pointer; user-select: none;
+    margin-top: .25rem;
+  }
+  .checkbox input { margin-top: 2px; accent-color: var(--accent); }
+</style>
+{% endblock %}

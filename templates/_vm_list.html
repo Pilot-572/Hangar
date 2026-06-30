@@ -1,0 +1,167 @@
+{% if not data.vms %}
+  <div class="empty">No VMs or containers found.</div>
+{% else %}
+{% set any_running = data.vms|selectattr('status','equalto','running')|list %}
+{% if any_running %}
+<div class="hint-bar">Hold <strong>Stop</strong> or <strong>Restart</strong> for one second to confirm.</div>
+{% endif %}
+<div class="grid">
+{% for vm in data.vms %}
+  {% set running  = vm.status == 'running' %}
+  {% set stopped  = vm.status == 'stopped' %}
+  {% set pending  = vm.status in ('starting','stopping','restarting') %}
+  {% set status_order = {'running': 0, 'stopped': 2, 'starting': 1, 'stopping': 1, 'restarting': 1}.get(vm.status, 3) %}
+  <article class="vm{% if pending %} vm-pending{% endif %}{% for t in vm.tags %} t-{{ t|replace(' ', '_')|replace(':','_')|lower }}{% endfor %}"
+           data-node="{{ vm.pve_node }}"
+           data-status="{{ vm.status }}"
+           data-name="{{ vm.name|lower }}"
+           data-cpu="{{ vm.cpu_pct }}"
+           data-uptime="{{ vm.uptime_s }}"
+           data-status-order="{{ status_order }}">
+    <div class="vm-head">
+      <div class="vm-title">
+        <div class="vm-name">{{ vm.display_name }}</div>
+        {% if vm.alias %}<div class="vm-subtitle mono">{{ vm.name }}</div>{% endif %}
+        {% if vm.show_meta %}
+        <div class="vm-meta">
+          <span class="chip">{{ vm.kind|upper }} · {{ vm.vmid }}</span>
+          <span>{{ vm.pve_node }}</span>
+          {% if running %}<span>· up {{ vm.uptime_s|uptime }}</span>{% endif %}
+        </div>
+        {% endif %}
+        <div class="vm-tags">
+          {% for t in vm.tags %}<button class="tag tag-pill" type="button" data-tag="{{ t|replace(' ','_')|replace(':','_')|lower }}" title="Filter by {{ t }}">{{ t }}</button>{% endfor %}
+          <button class="tag tag-edit-pill" type="button"
+                  data-hangar-node="{{ vm.hangar_node }}"
+                  data-pve-node="{{ vm.pve_node }}"
+                  data-kind="{{ vm.kind }}"
+                  data-vmid="{{ vm.vmid }}"
+                  data-name="{{ vm.name }}"
+                  data-tags="{{ vm.tags|join(';') }}"
+                  title="Edit tags">{% if vm.tags %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:11px;height:11px;vertical-align:-1px;margin-right:2px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit{% else %}+ Add tags{% endif %}</button>
+        </div>
+        {% if running and (vm.show_ip or vm.show_console) %}
+        <div class="vm-links">
+          {% if vm.show_ip and vm.ip %}
+          {% set web = vm.web_url or 'http://' ~ vm.ip %}
+          <a href="{{ web }}" target="_blank" rel="noopener" class="ip-link"
+             title="Open {{ web }} in a new tab{% if not vm.web_port %} (no web port detected — set tag web:PORT or use card settings){% endif %}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+              <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+            <span class="mono">{{ vm.ip }}{% if vm.web_port %}:{{ vm.web_port }}{% endif %}</span>
+          </a>
+          <button type="button" class="ip-copy" data-copy="{{ vm.ip }}"
+                  title="Copy IP" aria-label="Copy {{ vm.ip }} to clipboard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+          </button>
+          {% endif %}
+          {% if vm.show_console %}
+          <a href="{{ vm.console_url }}" target="_blank" rel="noopener" class="ip-link console-link"
+             title="Open Proxmox console in a new tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+            </svg>
+            <span>Console</span>
+          </a>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+      <div class="vm-head-right">
+        <button type="button" class="card-cog" title="Card settings"
+                aria-label="Customize {{ vm.name }}"
+                data-hangar-node="{{ vm.hangar_node }}"
+                data-pve-node="{{ vm.pve_node }}"
+                data-kind="{{ vm.kind }}"
+                data-vmid="{{ vm.vmid }}"
+                data-name="{{ vm.name }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+        <span class="badge {% if running %}online{% elif pending %}pending{% endif %}">
+          <span class="dot"></span>{{ vm.status }}
+        </span>
+      </div>
+    </div>
+
+    {% if running and vm.show_stats %}
+    <div class="vm-stats">
+      <div>
+        <div class="stat-head"><span class="stat-label">CPU</span><span class="stat-val">{{ vm.cpu_pct }}%</span></div>
+        <div class="meter">
+          <div class="meter-fill {% if vm.cpu_pct >= 90 %}crit{% elif vm.cpu_pct >= 70 %}warn{% endif %}"
+               style="width: {{ vm.cpu_pct }}%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="stat-head"><span class="stat-label">Memory</span><span class="stat-val">{{ vm.mem_pct }}%</span></div>
+        <div class="meter">
+          <div class="meter-fill {% if vm.mem_pct >= 90 %}crit{% elif vm.mem_pct >= 70 %}warn{% endif %}"
+               style="width: {{ vm.mem_pct }}%"></div>
+        </div>
+      </div>
+      <div>
+        <div class="stat-head"><span class="stat-label">Disk</span><span class="stat-val">{% if vm.disk_known %}{{ vm.disk_pct }}%{% else %}—{% endif %}</span></div>
+        <div class="meter">
+          <div class="meter-fill {% if vm.disk_pct >= 90 %}crit{% elif vm.disk_pct >= 75 %}warn{% endif %}"
+               style="width: {{ vm.disk_pct }}%"></div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="vm-actions">
+      {% if pending %}
+        <button class="btn btn-primary btn-pending" disabled>
+          <span class="spinner" aria-hidden="true"></span>
+          <span>{{ vm.status|capitalize }}…</span>
+        </button>
+      {% elif running %}
+        <button class="btn btn-primary btn-stop btn-arm"
+                hx-post="/api/{{ vm.hangar_node }}/{{ vm.pve_node }}/{{ vm.kind }}/{{ vm.vmid }}/shutdown"
+                hx-trigger="confirmed" hx-target="#vms" hx-swap="innerHTML"
+                aria-label="Stop {{ vm.name }} — hold to confirm">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/>
+          </svg>
+          <span>Stop</span>
+        </button>
+        <button class="btn btn-icon btn-secondary btn-arm"
+                hx-post="/api/{{ vm.hangar_node }}/{{ vm.pve_node }}/{{ vm.kind }}/{{ vm.vmid }}/reboot"
+                hx-trigger="confirmed" hx-target="#vms" hx-swap="innerHTML"
+                title="Restart — hold to confirm"
+                aria-label="Restart {{ vm.name }} — hold to confirm">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+        </button>
+      {% else %}
+        <button class="btn btn-primary btn-go"
+                hx-post="/api/{{ vm.hangar_node }}/{{ vm.pve_node }}/{{ vm.kind }}/{{ vm.vmid }}/start"
+                hx-target="#vms" hx-swap="innerHTML"
+                aria-label="Start {{ vm.name }}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polygon points="6 3 20 12 6 21 6 3" fill="currentColor"/>
+          </svg>
+          <span>Start</span>
+        </button>
+      {% endif %}
+    </div>
+  </article>
+{% endfor %}
+</div>
+{% endif %}
+
+{% if data.errors %}
+<div class="errors">
+  {% for e in data.errors %}<div class="e"><b>{{ e.node }}</b> {{ e.error }}</div>{% endfor %}
+</div>
+{% endif %}

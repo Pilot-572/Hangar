@@ -1,0 +1,1300 @@
+<!doctype html>
+<html lang="en"{% if scheme and scheme != 'auto' %} data-scheme="{{ scheme }}"{% endif %}>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0a0a0b" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <title>Hangar</title>
+  <link rel="manifest" href="/static/manifest.json">
+  <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/static/icon.svg">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <script src="https://unpkg.com/htmx.org@1.9.12/dist/htmx.min.js"
+          integrity="sha384-ujb1lZYygJmzgSwoxRggbCHcjc0rB2XoQrxeTUQyRjrOnlCoYta87iKBWq3EsdM2"
+          crossorigin="anonymous"></script>
+
+  <style>
+    :root {
+      --accent: {{ accent }};
+      --accent-fg: {{ accent_fg }};
+      --accent-soft: color-mix(in srgb, var(--accent) 12%, transparent);
+      --accent-border: color-mix(in srgb, var(--accent) 40%, transparent);
+
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-2: #f5f5f4;
+      --border: #e7e5e4;
+      --border-strong: #d6d3d1;
+      --text: #18181b;
+      --text-2: #52525b;
+      --text-3: #a1a1aa;
+
+      --success: #10b981;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+
+      --radius: 12px;
+      --radius-sm: 8px;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+      --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+
+      --hold-ms: {{ HOLD_MS }}ms;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0a0a0b;
+        --surface: #141416;
+        --surface-2: #1c1c1f;
+        --border: #2a2a2e;
+        --border-strong: #3a3a3f;
+        --text: #fafafa;
+        --text-2: #a1a1aa;
+        --text-3: #71717a;
+        --shadow-sm: none;
+        --shadow: none;
+      }
+    }
+    html[data-scheme="dark"] {
+      --bg: #0a0a0b;
+      --surface: #141416;
+      --surface-2: #1c1c1f;
+      --border: #2a2a2e;
+      --border-strong: #3a3a3f;
+      --text: #fafafa;
+      --text-2: #a1a1aa;
+      --text-3: #71717a;
+      --shadow-sm: none;
+      --shadow: none;
+    }
+    html[data-scheme="light"] {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --surface-2: #f5f5f4;
+      --border: #e7e5e4;
+      --border-strong: #d6d3d1;
+      --text: #18181b;
+      --text-2: #52525b;
+      --text-3: #a1a1aa;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+      --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    button { font: inherit; color: inherit; background: none; border: none; padding: 0; cursor: pointer; }
+    html { -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+    body {
+      font-family: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+      font-size: 14px;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      padding-bottom: 2.5rem;
+      touch-action: manipulation;
+      line-height: 1.5;
+    }
+    .mono { font-family: 'Geist Mono', ui-monospace, Menlo, monospace; }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+    @media (min-width: 720px) {
+      .container { padding: 0 1.5rem; }
+    }
+
+    /* ---------- header ---------- */
+    header.app-header {
+      padding: 1.5rem 0 1.25rem;
+    }
+    .brand {
+      display: flex; align-items: center; gap: .65rem;
+    }
+    .brand > a.brand-anchor {
+      display: flex; align-items: center; gap: .65rem;
+      text-decoration: none; color: inherit;
+    }
+    .brand .logo {
+      width: 28px; height: 28px; border-radius: 7px;
+      background: var(--accent); color: var(--accent-fg);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 1px 0 rgba(255,255,255,.15) inset, 0 1px 2px rgba(0,0,0,.06);
+    }
+    .brand .logo svg { width: 18px; height: 18px; }
+    .brand h1 {
+      font-size: 19px; font-weight: 600; letter-spacing: -0.01em;
+    }
+    .brand-spacer { flex: 1; }
+    .header-link {
+      width: 36px; height: 36px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 8px;
+      color: var(--text-2); text-decoration: none;
+      transition: background-color .15s, color .15s;
+    }
+    .header-link:hover { background: var(--surface); color: var(--text); }
+    .header-link svg { width: 18px; height: 18px; }
+    .brand-meta {
+      margin-top: .35rem;
+      color: var(--text-2);
+      font-size: 12.5px;
+    }
+    .brand-meta .mono { font-size: 12px; color: var(--text); }
+
+    /* ---------- section heads ---------- */
+    .section {
+      margin-top: 1.5rem;
+    }
+    .section-head {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: .65rem;
+    }
+    .section-head h2 {
+      font-size: 12px; font-weight: 600; letter-spacing: .04em;
+      color: var(--text-2); text-transform: uppercase;
+    }
+    .section-head .extra { font-size: 12px; color: var(--text-3); }
+
+    /* ---------- node strip (filter pills) ---------- */
+    .strip {
+      display: flex; gap: .55rem; overflow-x: auto;
+      padding-bottom: .35rem;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      margin: 0 -1rem; padding-left: 1rem; padding-right: 1rem;
+    }
+    @media (min-width: 720px) { .strip { margin: 0; padding-left: 0; padding-right: 0; } }
+    .strip::-webkit-scrollbar { display: none; }
+
+    .plate {
+      scroll-snap-align: start; flex: 0 0 auto;
+      min-width: 12rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: .85rem 1rem;
+      box-shadow: var(--shadow-sm);
+      transition: border-color .15s, box-shadow .15s, transform .08s;
+      text-align: left;
+      display: flex; flex-direction: column; gap: .55rem;
+    }
+    .plate-all { min-width: 8rem; align-items: stretch; }
+
+    .plate.filter-pill:hover { border-color: var(--border-strong); }
+    .plate.filter-pill:active { transform: translateY(1px); }
+    .plate.filter-pill.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    .plate-head {
+      display: flex; justify-content: space-between; align-items: center; gap: .5rem;
+    }
+    .plate-name {
+      font-weight: 600; font-size: 14px;
+      letter-spacing: -0.01em;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .badge {
+      display: inline-flex; align-items: center; gap: .3rem;
+      font-size: 11px; font-weight: 500;
+      padding: .15rem .45rem;
+      border-radius: 999px;
+      background: var(--surface-2);
+      color: var(--text-2);
+    }
+    .badge .dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--text-3);
+    }
+    .badge.online { color: var(--success); background: color-mix(in srgb, var(--success) 10%, transparent); }
+    .badge.online .dot { background: var(--success); }
+    .badge.offline { color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, transparent); }
+    .badge.offline .dot { background: var(--danger); }
+    .badge.pending { color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+    .badge.pending .dot { background: var(--warn); animation: pulse 1s infinite; }
+    @keyframes pulse { 50% { opacity: .3; } }
+
+    .hint-bar {
+      margin-bottom: .75rem;
+      padding: .5rem .8rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      color: var(--text-2);
+    }
+    .hint-bar strong { color: var(--text); font-weight: 600; }
+
+    .vm-tags {
+      margin-top: .35rem;
+      display: flex; flex-wrap: wrap; gap: .3rem;
+    }
+    .tag {
+      display: inline-block;
+      font-size: 10.5px; font-weight: 600;
+      padding: .12rem .5rem;
+      border-radius: 4px;
+      background: var(--accent-soft);
+      color: var(--text);
+      letter-spacing: .01em;
+      cursor: pointer; border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+      font-family: inherit;
+      transition: background-color .15s, transform .08s;
+    }
+    .tag:hover { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+    .tag:active { transform: translateY(1px); }
+    .tag-edit-pill {
+      background: transparent;
+      color: var(--text-2);
+      border: 1px dashed var(--border-strong);
+      font-weight: 500;
+    }
+    .tag-edit-pill:hover {
+      background: var(--surface-2);
+      color: var(--text);
+      border-style: solid;
+    }
+
+    /* Tag editor dialog */
+    dialog.modal {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      margin: 0;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text);
+      padding: 0;
+      max-width: 26rem; width: calc(100vw - 2rem);
+      max-height: calc(100vh - 2rem); overflow: auto;
+      box-shadow: 0 24px 64px -16px rgba(0,0,0,.45);
+    }
+    dialog.modal::backdrop {
+      background: rgba(0,0,0,.45);
+      backdrop-filter: blur(4px);
+    }
+    .modal-body { padding: 1.1rem 1.25rem 1.25rem; }
+    .modal-head {
+      display: flex; justify-content: space-between; align-items: baseline; gap: .5rem;
+      margin-bottom: .25rem;
+    }
+    .modal-head h3 {
+      font-size: 16px; font-weight: 600; letter-spacing: -0.01em;
+    }
+    .modal-head .modal-vm {
+      font-size: 12px; color: var(--text-2);
+      font-family: 'Geist Mono', monospace;
+    }
+    .modal-desc {
+      font-size: 12.5px; color: var(--text-2); line-height: 1.5;
+      margin-bottom: .85rem;
+    }
+    .modal-actions {
+      display: flex; justify-content: flex-end; gap: .5rem;
+      margin-top: 1rem;
+    }
+    .modal-btn {
+      font: inherit; font-size: 13.5px; font-weight: 600;
+      height: 38px; padding: 0 .9rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background-color .15s;
+    }
+    .modal-btn-cancel {
+      background: transparent;
+      border: 1px solid var(--border-strong);
+      color: var(--text);
+    }
+    .modal-btn-cancel:hover { background: var(--surface-2); }
+    .modal-btn-save {
+      background: var(--accent);
+      color: var(--accent-fg);
+      border: none;
+    }
+    .modal-btn-save:hover { filter: brightness(1.05); }
+    .modal-input {
+      width: 100%; height: 42px; padding: 0 .85rem;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text);
+      font: inherit; font-family: 'Geist Mono', monospace; font-size: 13px;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .modal-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+    .modal-hint {
+      font-size: 11px; color: var(--text-3); margin-top: .4rem;
+    }
+
+    .ctrls { display: flex; align-items: center; gap: .65rem; flex-wrap: wrap; justify-content: flex-end; }
+    @media (max-width: 520px) {
+      .sort-label { display: none; }
+      .sort-select { padding: .3rem 1.25rem .3rem .55rem; }
+    }
+    .tag-filter-bar {
+      display: inline-flex; align-items: center; gap: .35rem;
+      font-size: 11.5px; color: var(--text-2);
+      background: var(--accent-soft);
+      padding: .15rem .15rem .15rem .55rem;
+      border-radius: 999px;
+    }
+    .tag-filter-bar[hidden] { display: none !important; }
+    .active-tag-chip {
+      font-size: 11px; font-weight: 600;
+      color: var(--text);
+      background: none; border: none; padding: 0;
+    }
+    .clear-tag-x {
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--surface);
+      color: var(--text-2);
+      font-size: 14px; line-height: 1;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .clear-tag-x:hover { color: var(--text); }
+
+    .sort-control {
+      display: inline-flex; align-items: center; gap: .4rem;
+      font-size: 11.5px; color: var(--text-2);
+    }
+    .sort-label { font-weight: 600; }
+    .sort-select {
+      font: inherit; font-size: 11.5px; font-weight: 500;
+      padding: .25rem 1.25rem .25rem .55rem;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%238a8a8a' stroke-width='1.5' stroke-linecap='round'><polyline points='3 5 6 8 9 5'/></svg>");
+      background-repeat: no-repeat;
+      background-position: right .35rem center;
+      background-size: 12px;
+    }
+    .sort-select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    /* tag filter (JS-driven) — hide VMs that don't have the active tag class */
+    body[data-tag-filter] .vm.tagmiss { display: none; }
+    /* name search (JS-driven) — hide VMs whose name doesn't include the query */
+    body[data-search] .vm.searchmiss { display: none; }
+
+    .vm-search-wrap {
+      position: relative;
+      display: inline-flex; align-items: center;
+    }
+    .vm-search-icon {
+      position: absolute; left: .45rem; top: 50%; transform: translateY(-50%);
+      width: 12px; height: 12px; color: var(--text-3);
+      pointer-events: none;
+    }
+    .vm-search {
+      font: inherit; font-size: 11.5px; font-weight: 500;
+      padding: .25rem 1.4rem .25rem 1.45rem;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text);
+      width: 140px;
+      transition: border-color .15s, box-shadow .15s, width .15s;
+    }
+    .vm-search::placeholder { color: var(--text-3); }
+    .vm-search::-webkit-search-cancel-button { display: none; }
+    .vm-search:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+      width: 180px;
+    }
+    .vm-search-x {
+      position: absolute; right: .25rem; top: 50%; transform: translateY(-50%);
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--surface-2);
+      color: var(--text-2);
+      font-size: 12px; line-height: 1;
+      display: inline-flex; align-items: center; justify-content: center;
+      border: none; cursor: pointer;
+    }
+    .vm-search-x:hover { color: var(--text); }
+    @media (max-width: 520px) {
+      .vm-search { width: 110px; }
+      .vm-search:focus { width: 140px; }
+    }
+    .search-empty {
+      padding: 1.25rem;
+      text-align: center;
+      color: var(--text-2);
+      font-size: 13px;
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+    }
+    .search-empty[hidden] { display: none; }
+
+    .vm-ip,
+    .vm-links { margin-top: .35rem; display: flex; flex-wrap: wrap; gap: .25rem .5rem; }
+    .ip-link {
+      display: inline-flex; align-items: center; gap: .35rem;
+      font-family: 'Geist Mono', monospace;
+      font-size: 12px; font-weight: 500;
+      color: var(--text-2);
+      text-decoration: none;
+      padding: .15rem .45rem .15rem .35rem;
+      border-radius: 4px;
+      transition: color .15s, background-color .15s;
+    }
+    .ip-link svg { width: 12px; height: 12px; opacity: .6; }
+    .ip-link:hover { color: var(--accent); background: var(--accent-soft); }
+    .ip-link:hover svg { opacity: 1; }
+    .ip-copy {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 22px; height: 22px;
+      border: none; background: transparent;
+      color: var(--text-3); cursor: pointer;
+      border-radius: 4px;
+      margin-left: -.25rem;
+      transition: color .15s, background-color .15s;
+    }
+    .ip-copy svg { width: 12px; height: 12px; }
+    .ip-copy:hover { color: var(--accent); background: var(--accent-soft); }
+    .ip-copy.copied { color: var(--accent); }
+
+    .vm-subtitle {
+      font-size: 11px;
+      color: var(--text-3);
+      margin-top: -2px;
+      margin-bottom: 2px;
+      letter-spacing: .01em;
+    }
+    .vm-head-right {
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      flex-shrink: 0;
+    }
+    .card-cog {
+      width: 26px; height: 26px;
+      display: inline-flex; align-items: center; justify-content: center;
+      border: none; background: transparent;
+      color: var(--text-3); cursor: pointer;
+      border-radius: 6px;
+      opacity: 0;
+      transition: opacity .15s, color .15s, background-color .15s;
+    }
+    .card-cog svg { width: 13px; height: 13px; }
+    .vm:hover .card-cog,
+    .card-cog:focus-visible { opacity: 1; }
+    .card-cog:hover { color: var(--accent); background: var(--accent-soft); }
+    @media (hover: none) {
+      .card-cog { opacity: .55; }
+    }
+
+    .card-modal-row {
+      display: flex; flex-direction: column; gap: .25rem;
+      margin-top: .7rem;
+    }
+    .card-modal-row > label.row-label {
+      font-size: 11.5px; color: var(--text-2); font-weight: 600;
+    }
+    .card-modal-row .row-hint {
+      font-size: 11px; color: var(--text-3);
+    }
+    .card-modal-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: .75rem;
+      margin-top: .7rem;
+    }
+    .toggle-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .45rem .6rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      font-size: 12.5px;
+    }
+    .toggle-row input[type="checkbox"] {
+      width: 30px; height: 18px;
+      appearance: none;
+      background: var(--surface-2);
+      border: 1px solid var(--border-strong);
+      border-radius: 999px;
+      position: relative;
+      cursor: pointer;
+      transition: background .15s, border-color .15s;
+    }
+    .toggle-row input[type="checkbox"]::after {
+      content: "";
+      position: absolute;
+      top: 1px; left: 1px;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--text-2);
+      transition: transform .15s, background .15s;
+    }
+    .toggle-row input[type="checkbox"]:checked {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    .toggle-row input[type="checkbox"]:checked::after {
+      transform: translateX(12px);
+      background: var(--accent-fg);
+    }
+    @media (max-width: 480px) {
+      .card-modal-grid { grid-template-columns: 1fr; }
+    }
+
+    .btn-pending {
+      background: var(--surface-2);
+      color: var(--text-2);
+      cursor: default;
+      border-color: var(--border);
+    }
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid var(--border-strong);
+      border-top-color: var(--text-2);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .vm-pending { opacity: .85; }
+
+    .plate-stats {
+      display: grid; grid-template-columns: 1fr 1fr; gap: .55rem;
+    }
+    .plate-stat { display: flex; flex-direction: column; gap: 3px; }
+    .plate-stat .k { font-size: 10px; color: var(--text-3); font-weight: 500; letter-spacing: .02em; }
+    .plate-stat .v { font-family: 'Geist Mono', monospace; font-size: 13px; font-weight: 600; color: var(--text); }
+
+    .meter {
+      height: 4px; border-radius: 999px; background: var(--surface-2); overflow: hidden; position: relative;
+    }
+    .meter-fill {
+      height: 100%; background: var(--accent); border-radius: 999px;
+      transition: width .35s ease;
+    }
+    .meter-fill.warn { background: var(--warn); }
+    .meter-fill.crit { background: var(--danger); }
+
+    /* ---------- VM grid ---------- */
+    .grid {
+      display: grid; grid-template-columns: 1fr; gap: .75rem;
+    }
+    @media (min-width: 720px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (min-width: 1080px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+
+    .vm {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.1rem 1.1rem;
+      box-shadow: var(--shadow-sm);
+      display: flex; flex-direction: column; gap: .85rem;
+      transition: border-color .15s;
+    }
+    .vm:hover { border-color: var(--border-strong); }
+
+    .vm-head { display: flex; justify-content: space-between; align-items: flex-start; gap: .75rem; }
+    .vm-title { min-width: 0; }
+    .vm-name {
+      font-size: 16px; font-weight: 600; letter-spacing: -0.01em;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .vm-meta {
+      margin-top: .25rem;
+      font-size: 12px; color: var(--text-2);
+      display: flex; flex-wrap: wrap; gap: .5rem; align-items: center;
+    }
+    .chip {
+      font-family: 'Geist Mono', monospace;
+      font-size: 11px; font-weight: 500;
+      padding: .15rem .45rem;
+      border-radius: 6px;
+      background: var(--surface-2);
+      color: var(--text-2);
+      border: 1px solid var(--border);
+    }
+
+    .vm-stats {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .55rem;
+    }
+    @media (max-width: 520px) {
+      .vm-stats { grid-template-columns: 1fr 1fr; gap: .55rem .75rem; }
+      .vm-stats > :nth-child(3) { grid-column: 1 / -1; }
+    }
+    .stat-head {
+      display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px;
+    }
+    .stat-label { font-size: 10px; color: var(--text-3); font-weight: 500; letter-spacing: .02em; }
+    .stat-val { font-family: 'Geist Mono', monospace; font-size: 12px; font-weight: 600; color: var(--text); }
+
+    .vm-actions { display: flex; gap: .5rem; }
+    .btn {
+      font-family: 'Geist', sans-serif;
+      font-weight: 600; font-size: 14px;
+      letter-spacing: -0.005em;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: .45rem;
+      position: relative; overflow: hidden;
+      transition: background-color .15s, border-color .15s, transform .08s, opacity .15s;
+      user-select: none;
+    }
+    .btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .btn:active { transform: translateY(1px); }
+
+    .btn-primary {
+      flex: 1 1 auto; height: 44px; padding: 0 1rem;
+    }
+    .btn-icon {
+      flex: 0 0 auto; width: 44px; height: 44px;
+    }
+
+    .btn-go {
+      background: var(--accent);
+      color: var(--accent-fg);
+    }
+    .btn-go:hover { filter: brightness(1.05); }
+
+    .btn-stop {
+      background: var(--danger);
+      color: white;
+    }
+    .btn-stop:hover { filter: brightness(1.05); }
+
+    .btn-secondary {
+      background: var(--surface);
+      border-color: var(--border-strong);
+      color: var(--text);
+    }
+    .btn-secondary:hover { background: var(--surface-2); }
+
+    /* hold-to-arm: subtle bottom progress bar */
+    .btn-arm { position: relative; }
+    .btn-arm::after {
+      content: ''; position: absolute; left: 0; bottom: 0; height: 3px; width: 0;
+      background: rgba(255,255,255,.7);
+      transition: none;
+    }
+    .btn-arm.arming::after { width: 100%; transition: width var(--hold-ms) linear; }
+    .btn-arm.arming { opacity: .92; }
+    /* secondary arm has darker progress bar (no white bg) */
+    .btn-secondary.btn-arm::after { background: var(--danger); }
+
+    .vm-hint {
+      font-size: 10.5px; color: var(--text-3);
+      margin-top: -.25rem; padding-left: 2px;
+    }
+
+    /* filter visibility */
+    body[data-filter="proxmox"]  .vm:not([data-node="proxmox"])  { display: none; }
+    body[data-filter="proxmox2"] .vm:not([data-node="proxmox2"]) { display: none; }
+    body[data-filter="proxmox3"] .vm:not([data-node="proxmox3"]) { display: none; }
+    body[data-filter="cluster"]  .vm:not([data-node="cluster"])  { display: none; }
+
+    /* empty / errors */
+    .empty {
+      padding: 3rem 1rem; text-align: center; color: var(--text-3);
+      font-size: 13px;
+    }
+    .errors {
+      background: color-mix(in srgb, var(--danger) 6%, transparent);
+      border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent);
+      border-radius: var(--radius);
+      padding: .75rem 1rem;
+      margin-top: 1rem;
+      font-size: 12px;
+      color: var(--danger);
+    }
+    .errors .e { padding: 2px 0; }
+    .errors .e b { font-weight: 600; margin-right: .35rem; }
+
+    /* toast */
+    #toast {
+      position: fixed; bottom: 1rem; left: 1rem; right: 1rem;
+      max-width: 28rem; margin: 0 auto;
+      padding: .75rem 1rem;
+      background: var(--text);
+      color: var(--bg);
+      font-size: 13px; font-weight: 500;
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow);
+      transform: translateY(180%);
+      transition: transform 260ms cubic-bezier(.18,.9,.2,1);
+      z-index: 50;
+      display: flex; align-items: center; gap: .5rem;
+    }
+    #toast.show { transform: translateY(0); }
+    #toast.err { background: var(--danger); color: white; }
+
+    /* no swap motion — innerHTML replacement is instant; any dimming reads as flicker */
+
+    /* recent activity log */
+    .history-empty {
+      padding: 1.25rem 1.1rem; text-align: center;
+      font-size: 12.5px; color: var(--text-3);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+    .history-list {
+      list-style: none; padding: 0; margin: 0;
+      display: flex; flex-direction: column; gap: .35rem;
+    }
+    .history-item {
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr) auto auto auto;
+      gap: .65rem; align-items: center;
+      padding: .55rem .85rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+    }
+    .history-icon {
+      width: 24px; height: 24px;
+      display: inline-flex; align-items: center; justify-content: center;
+      color: var(--accent);
+    }
+    .history-icon svg { width: 13px; height: 13px; }
+    .history-vm {
+      font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .history-action {
+      font-size: 12px; color: var(--text-2); text-transform: lowercase;
+    }
+    .history-id { font-size: 10.5px !important; }
+    .history-time {
+      font-size: 11.5px; color: var(--text-3);
+      font-variant-numeric: tabular-nums;
+      min-width: 4.5rem; text-align: right;
+    }
+    .history-fail { border-color: color-mix(in srgb, var(--danger) 35%, var(--border)); }
+    .history-fail .history-icon { color: var(--danger); }
+    .history-fail .history-action { color: var(--danger); font-weight: 600; }
+    @media (max-width: 560px) {
+      .history-item {
+        grid-template-columns: 24px minmax(0, 1fr) auto;
+        gap: .55rem;
+      }
+      .history-action, .history-id { display: none; }
+    }
+
+    /* desktop zoom — slightly larger type & spacing on big screens */
+    @media (min-width: 1080px) {
+      body { font-size: 15.5px; line-height: 1.55; }
+      .brand h1 { font-size: 22px; }
+      .brand .logo { width: 32px; height: 32px; }
+      .brand .logo svg { width: 20px; height: 20px; }
+      .brand-meta { font-size: 13.5px; }
+      .section-head h2 { font-size: 12.5px; }
+      .vm-name { font-size: 18.5px; }
+      .vm-meta { font-size: 12.5px; }
+      .vm { padding: 1.15rem 1.25rem 1.3rem 1.35rem; gap: 1rem; }
+      .grid { gap: .9rem; }
+      .chip { font-size: 12px; padding: .2rem .55rem; }
+      .ip-link { font-size: 13px; }
+      .ip-link svg { width: 13px; height: 13px; }
+      .btn-primary { height: 50px; font-size: 15px; padding: 0 1.15rem; }
+      .btn-icon { width: 50px; height: 50px; }
+      .btn svg { width: 18px; height: 18px; }
+      .badge { font-size: 12px; padding: .2rem .55rem; }
+      .badge .dot { width: 7px; height: 7px; }
+      .plate { min-width: 13rem; padding: 1rem 1.1rem .85rem; }
+      .plate-name { font-size: 15px; }
+      .plate-stat { font-size: 10px; }
+      .plate-stat .v { font-size: 14px; }
+      .stat-val { font-size: 13px; }
+      .tag { font-size: 11.5px; padding: .15rem .55rem; }
+      .meter { height: 5px; }
+    }
+  </style>
+</head>
+<body data-filter="all">
+  <div class="container">
+    <header class="app-header">
+      <div class="brand">
+        <a href="/" class="brand-anchor">
+          <div class="logo" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 16 L12 6 L21 16 L21 19 L3 19 Z"/>
+              <line x1="12" y1="14" x2="12" y2="19"/>
+            </svg>
+          </div>
+          <h1>Hangar</h1>
+        </a>
+        <div class="brand-spacer"></div>
+        <a href="/settings" class="header-link" aria-label="Settings" title="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </a>
+      </div>
+      <div class="brand-meta" id="brand-meta">
+        <span class="mono">—</span> nodes online · <span class="mono">—</span> running · <span class="mono">—</span> stopped
+      </div>
+    </header>
+
+    {% block body %}{% endblock %}
+  </div>
+
+  <div id="toast"></div>
+
+  <dialog id="card-modal" class="modal" aria-labelledby="card-modal-title">
+    <div class="modal-body">
+      <div class="modal-head">
+        <h3 id="card-modal-title">Card settings</h3>
+        <span class="modal-vm" id="card-modal-vm"></span>
+      </div>
+      <p class="modal-desc">Stored in <code>hangar.yaml</code>. Saves locally, not to Proxmox.</p>
+
+      <div class="card-modal-row">
+        <label class="row-label" for="card-modal-alias">Display name</label>
+        <input type="text" id="card-modal-alias" class="modal-input" placeholder="(leave blank to use real name)" maxlength="64" autocomplete="off">
+      </div>
+
+      <div class="card-modal-row">
+        <label class="row-label" for="card-modal-ip">IP override</label>
+        <input type="text" id="card-modal-ip" class="modal-input mono" placeholder="auto-detect" inputmode="numeric" pattern="\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}">
+        <span class="row-hint">For QEMU VMs without guest agent. e.g. 192.168.50.50</span>
+      </div>
+
+      <div class="card-modal-row">
+        <label class="row-label" for="card-modal-port">Web port override</label>
+        <input type="number" id="card-modal-port" class="modal-input mono" placeholder="auto-detect" min="1" max="65535">
+        <span class="row-hint">Empty = probe common ports. Set to e.g. 5984 to skip the probe.</span>
+      </div>
+
+      <div class="card-modal-grid">
+        <label class="toggle-row">Show IP <input type="checkbox" id="card-show-ip"></label>
+        <label class="toggle-row">Show Console <input type="checkbox" id="card-show-console"></label>
+        <label class="toggle-row">Show meta <input type="checkbox" id="card-show-meta"></label>
+        <label class="toggle-row">Show stats <input type="checkbox" id="card-show-stats"></label>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="modal-btn modal-btn-cancel" id="card-modal-cancel">Cancel</button>
+        <button type="button" class="modal-btn modal-btn-save" id="card-modal-save">Save</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="tag-modal" class="modal" aria-labelledby="tag-modal-title">
+    <div class="modal-body">
+      <div class="modal-head">
+        <h3 id="tag-modal-title">Edit tags</h3>
+        <span class="modal-vm" id="tag-modal-vm"></span>
+      </div>
+      <p class="modal-desc">Comma or semicolon separated. Lowercase letters, numbers, <code>-</code>, <code>_</code>, <code>:</code> and <code>.</code> only.</p>
+      <input type="text" id="tag-modal-input" class="modal-input mono" placeholder="adblock; community-script" autocomplete="off" spellcheck="false">
+      <p class="modal-hint" id="tag-modal-hint">Tip: empty input = remove all tags.</p>
+      <div class="modal-actions">
+        <button type="button" class="modal-btn modal-btn-cancel" id="tag-modal-cancel">Cancel</button>
+        <button type="button" class="modal-btn modal-btn-save" id="tag-modal-save">Save</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script>
+    function showToast(msg, err) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.toggle('err', !!err);
+      t.classList.add('show');
+      clearTimeout(window._tt);
+      window._tt = setTimeout(() => t.classList.remove('show'), 2000);
+    }
+
+    // filter pill state lives on <body> so polling swaps don't reset it
+    (() => {
+      const applyActive = () => {
+        const f = document.body.dataset.filter || 'all';
+        document.querySelectorAll('.filter-pill').forEach(p =>
+          p.classList.toggle('active', (p.dataset.node || 'all') === f));
+      };
+      document.body.addEventListener('click', (e) => {
+        const p = e.target.closest('.filter-pill');
+        if (!p) return;
+        document.body.dataset.filter = p.dataset.node || 'all';
+        applyActive();
+      });
+      document.body.addEventListener('htmx:afterSwap', applyActive);
+      applyActive();
+    })();
+
+    // brand-meta summary updater (reads counts off the DOM on each swap)
+    (() => {
+      const update = () => {
+        const el = document.getElementById('brand-meta');
+        if (!el) return;
+        if (!document.querySelector('.plate.filter-pill')) { el.hidden = true; return; }
+        const nodes = document.querySelectorAll('.plate.filter-pill[data-node]:not([data-node="all"])');
+        let online = 0;
+        nodes.forEach(p => { if (p.classList.contains('node-online')) online++; });
+        const running = document.querySelectorAll('.vm[data-status="running"]').length;
+        const stopped = document.querySelectorAll('.vm[data-status="stopped"]').length;
+        el.innerHTML =
+          `<span class="mono">${online}</span> nodes online · ` +
+          `<span class="mono">${running}</span> running · ` +
+          `<span class="mono">${stopped}</span> stopped`;
+      };
+      document.body.addEventListener('htmx:afterSwap', update);
+      update();
+    })();
+
+    // tag edit modal
+    (() => {
+      const dlg = document.getElementById('tag-modal');
+      if (!dlg) return;
+      const input = document.getElementById('tag-modal-input');
+      const vmEl = document.getElementById('tag-modal-vm');
+      const cancelBtn = document.getElementById('tag-modal-cancel');
+      const saveBtn = document.getElementById('tag-modal-save');
+      let target = null;
+
+      document.body.addEventListener('click', (e) => {
+        const btn = e.target.closest('.tag-edit-pill');
+        if (!btn) return;
+        e.preventDefault();
+        target = btn;
+        vmEl.textContent = `${btn.dataset.kind.toUpperCase()} · ${btn.dataset.vmid} · ${btn.dataset.name}`;
+        input.value = (btn.dataset.tags || '').replace(/;/g, ', ');
+        if (typeof dlg.showModal === 'function') dlg.showModal();
+        else dlg.setAttribute('open', '');
+        setTimeout(() => input.focus(), 30);
+      });
+
+      cancelBtn.addEventListener('click', () => dlg.close());
+      dlg.addEventListener('click', (e) => {
+        // click on backdrop closes
+        if (e.target === dlg) dlg.close();
+      });
+
+      const save = async () => {
+        if (!target) return;
+        saveBtn.disabled = true;
+        const orig = saveBtn.textContent;
+        saveBtn.textContent = 'Saving…';
+        const url = `/api/${encodeURIComponent(target.dataset.hangarNode)}/${encodeURIComponent(target.dataset.pveNode)}/${target.dataset.kind}/${target.dataset.vmid}/tags`;
+        try {
+          const r = await fetch(url, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+            body: 'tags=' + encodeURIComponent(input.value),
+          });
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          const html = await r.text();
+          const vms = document.getElementById('vms');
+          if (vms) vms.innerHTML = html;
+          showToast('Tags updated ✓');
+          dlg.close();
+        } catch (err) {
+          console.error(err);
+          showToast('Tag update failed', true);
+        }
+        saveBtn.disabled = false;
+        saveBtn.textContent = orig;
+      };
+      saveBtn.addEventListener('click', save);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); save(); }
+      });
+    })();
+
+    // tag filter (click chip → filter list). Composes with node filter.
+    (() => {
+      const bar = document.getElementById('tag-filter-bar');
+      const chip = document.getElementById('active-tag-chip');
+      const clearBtn = document.getElementById('clear-tag');
+
+      const applyTagFilter = () => {
+        const tag = document.body.dataset.tagFilter || '';
+        if (!tag) {
+          bar.hidden = true;
+          document.querySelectorAll('.vm.tagmiss').forEach(v => v.classList.remove('tagmiss'));
+          return;
+        }
+        bar.hidden = false;
+        chip.textContent = tag;
+        document.querySelectorAll('.vm').forEach(v => {
+          v.classList.toggle('tagmiss', !v.classList.contains('t-' + tag));
+        });
+      };
+
+      document.body.addEventListener('click', (e) => {
+        const t = e.target.closest('.tag-pill');
+        if (t) {
+          e.preventDefault();
+          const tag = t.dataset.tag;
+          document.body.dataset.tagFilter = (document.body.dataset.tagFilter === tag) ? '' : tag;
+          applyTagFilter();
+          return;
+        }
+        if (e.target.closest('#clear-tag')) {
+          document.body.dataset.tagFilter = '';
+          applyTagFilter();
+        }
+      });
+      document.body.addEventListener('htmx:afterSwap', applyTagFilter);
+      applyTagFilter();
+    })();
+
+    // card settings modal — per-VM alias, port override, show/hide toggles.
+    (() => {
+      const dlg = document.getElementById('card-modal');
+      if (!dlg) return;
+      const vmEl = document.getElementById('card-modal-vm');
+      const aliasEl = document.getElementById('card-modal-alias');
+      const ipEl = document.getElementById('card-modal-ip');
+      const portEl = document.getElementById('card-modal-port');
+      const tIp = document.getElementById('card-show-ip');
+      const tConsole = document.getElementById('card-show-console');
+      const tMeta = document.getElementById('card-show-meta');
+      const tStats = document.getElementById('card-show-stats');
+      const cancelBtn = document.getElementById('card-modal-cancel');
+      const saveBtn = document.getElementById('card-modal-save');
+      let target = null;
+
+      const openFor = async (btn) => {
+        target = btn;
+        const { hangarNode, pveNode, kind, vmid, name } = btn.dataset;
+        vmEl.textContent = `${kind.toUpperCase()} · ${vmid} · ${name}`;
+        try {
+          const r = await fetch(`/api/card/${hangarNode}/${pveNode}/${kind}/${vmid}`);
+          const s = await r.json();
+          aliasEl.value = s.alias || '';
+          ipEl.value = s.ip || '';
+          portEl.value = (s.web_port == null ? '' : String(s.web_port));
+          tIp.checked = !!s.show_ip;
+          tConsole.checked = !!s.show_console;
+          tMeta.checked = !!s.show_meta;
+          tStats.checked = !!s.show_stats;
+        } catch (err) {
+          showToast('Failed to load card settings', true);
+          return;
+        }
+        if (typeof dlg.showModal === 'function') dlg.showModal();
+        else dlg.setAttribute('open', '');
+        setTimeout(() => aliasEl.focus(), 30);
+      };
+
+      document.body.addEventListener('click', (e) => {
+        const btn = e.target.closest('.card-cog');
+        if (!btn) return;
+        e.preventDefault();
+        openFor(btn);
+      });
+
+      const close = () => {
+        if (typeof dlg.close === 'function') dlg.close();
+        else dlg.removeAttribute('open');
+        target = null;
+      };
+      cancelBtn.addEventListener('click', close);
+      dlg.addEventListener('click', (e) => {
+        if (e.target === dlg) close();
+      });
+
+      const save = async () => {
+        if (!target) return;
+        const { hangarNode, pveNode, kind, vmid } = target.dataset;
+        const fd = new FormData();
+        fd.append('alias', aliasEl.value.trim());
+        fd.append('ip', ipEl.value.trim());
+        fd.append('web_port', portEl.value.trim());
+        fd.append('show_ip', tIp.checked ? '1' : '0');
+        fd.append('show_console', tConsole.checked ? '1' : '0');
+        fd.append('show_meta', tMeta.checked ? '1' : '0');
+        fd.append('show_stats', tStats.checked ? '1' : '0');
+
+        const orig = saveBtn.textContent;
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving…';
+        try {
+          const r = await fetch(`/api/card/${hangarNode}/${pveNode}/${kind}/${vmid}`, {
+            method: 'POST', body: fd,
+          });
+          if (!r.ok) throw new Error(await r.text());
+          const html = await r.text();
+          document.getElementById('vms').innerHTML = html;
+          document.body.dispatchEvent(new CustomEvent('htmx:afterSwap'));
+          close();
+          showToast('Card updated');
+        } catch (err) {
+          console.error(err);
+          showToast('Save failed', true);
+        }
+        saveBtn.disabled = false;
+        saveBtn.textContent = orig;
+      };
+      saveBtn.addEventListener('click', save);
+    })();
+
+    // click-to-copy IP — for services not on :80, link is useless so we surface a copy button.
+    (() => {
+      document.body.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.ip-copy');
+        if (!btn) return;
+        e.preventDefault();
+        const ip = btn.dataset.copy || '';
+        try {
+          await navigator.clipboard.writeText(ip);
+          btn.classList.add('copied');
+          showToast(`Copied ${ip}`);
+          setTimeout(() => btn.classList.remove('copied'), 1200);
+        } catch (err) {
+          showToast('Copy failed', true);
+        }
+      });
+    })();
+
+    // name search — hide cards whose data-name doesn't include the query. Composes with tag filter.
+    (() => {
+      const input = document.getElementById('vm-search');
+      const clearBtn = document.getElementById('vm-search-clear');
+      if (!input) return;
+
+      const apply = () => {
+        const q = (document.body.dataset.search || '').trim().toLowerCase();
+        clearBtn.hidden = !q;
+        if (!q) {
+          document.querySelectorAll('.vm.searchmiss').forEach(v => v.classList.remove('searchmiss'));
+          removeEmptyHint();
+          return;
+        }
+        let visible = 0;
+        document.querySelectorAll('#vms .vm').forEach(v => {
+          const hit = (v.dataset.name || '').includes(q);
+          v.classList.toggle('searchmiss', !hit);
+          if (hit && !v.classList.contains('tagmiss')) visible++;
+        });
+        renderEmptyHint(visible === 0, q);
+      };
+
+      const removeEmptyHint = () => {
+        const old = document.getElementById('search-empty-hint');
+        if (old) old.remove();
+      };
+      const renderEmptyHint = (show, q) => {
+        removeEmptyHint();
+        if (!show) return;
+        const host = document.getElementById('vms');
+        if (!host) return;
+        const div = document.createElement('div');
+        div.id = 'search-empty-hint';
+        div.className = 'search-empty';
+        div.textContent = `No workloads match "${q}".`;
+        host.appendChild(div);
+      };
+
+      input.addEventListener('input', () => {
+        document.body.dataset.search = input.value;
+        apply();
+      });
+      clearBtn.addEventListener('click', () => {
+        input.value = '';
+        document.body.dataset.search = '';
+        apply();
+        input.focus();
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && input.value) {
+          input.value = '';
+          document.body.dataset.search = '';
+          apply();
+        }
+      });
+      document.body.addEventListener('htmx:afterSwap', apply);
+      apply();
+    })();
+
+    // sort dropdown — reorders .grid children. Restores on htmx swap.
+    (() => {
+      const sel = document.getElementById('sort-select');
+      if (!sel) return;
+      const cmp = {
+        default: (a, b) => +a.dataset.statusOrder - +b.dataset.statusOrder || a.dataset.name.localeCompare(b.dataset.name),
+        name:    (a, b) => a.dataset.name.localeCompare(b.dataset.name),
+        cpu:     (a, b) => +b.dataset.cpu - +a.dataset.cpu,
+        uptime:  (a, b) => +b.dataset.uptime - +a.dataset.uptime,
+        node:    (a, b) => (a.dataset.node || '').localeCompare(b.dataset.node || '') || a.dataset.name.localeCompare(b.dataset.name),
+      };
+      const applySort = () => {
+        const grid = document.querySelector('#vms .grid');
+        if (!grid) return;
+        const mode = sel.value;
+        const items = [...grid.children];
+        items.sort(cmp[mode] || cmp.default);
+        items.forEach(el => grid.appendChild(el));
+      };
+      sel.addEventListener('change', applySort);
+      document.body.addEventListener('htmx:afterSwap', applySort);
+      applySort();
+    })();
+
+    // hold-to-arm for destructive actions
+    (() => {
+      const HOLD_MS = {{ HOLD_MS }};
+      let timer = null, armed = null;
+
+      const arm = (btn) => {
+        armed = btn;
+        btn.classList.add('arming');
+        if (navigator.vibrate) navigator.vibrate(8);
+        timer = setTimeout(() => {
+          if (navigator.vibrate) navigator.vibrate([0, 20]);
+          const url = btn.getAttribute('hx-post');
+          console.log('[hangar] firing', url);
+          htmx.ajax('POST', url, { target: '#vms', swap: 'innerHTML', source: btn })
+            .then(() => showToast('Action sent'))
+            .catch(err => { console.error('[hangar] action failed', err); showToast('Action failed', true); });
+          btn.classList.remove('arming');
+          armed = null; timer = null;
+        }, HOLD_MS);
+      };
+      const disarm = () => {
+        if (timer) clearTimeout(timer);
+        if (armed) armed.classList.remove('arming');
+        armed = null; timer = null;
+      };
+
+      document.body.addEventListener('pointerdown', (e) => {
+        const b = e.target.closest('.btn-arm');
+        if (!b) return;
+        e.preventDefault();
+        arm(b);
+      });
+      ['pointerup','pointerleave','pointercancel'].forEach(ev =>
+        document.body.addEventListener(ev, disarm));
+      document.body.addEventListener('click', (e) => {
+        const b = e.target.closest('.btn-arm');
+        if (!b) return;
+        e.preventDefault();
+        showToast('Press and hold to confirm');
+      });
+
+      document.body.addEventListener('htmx:responseError', () => showToast('Action failed', true));
+      document.body.addEventListener('htmx:sendError',     () => showToast('Network error', true));
+    })();
+  </script>
+</body>
+</html>

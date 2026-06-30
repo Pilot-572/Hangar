@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+hangar.yaml
+proxmox.txt
+.idea/
+.vscode/
+_*.log
+_*.err
+_*.png
+_*.html

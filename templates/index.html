@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block body %}
+<section class="section">
+  <div class="section-head">
+    <h2>Nodes</h2>
+    <span class="extra">tap to filter</span>
+  </div>
+  <div id="strip"
+       hx-get="/api/strip" hx-trigger="every {{ POLL_STRIP_S }}s" hx-swap="innerHTML">
+    {% include "_node_strip.html" %}
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head">
+    <h2>Workloads</h2>
+    <div class="ctrls">
+      <div id="tag-filter-bar" class="tag-filter-bar" hidden>
+        Tag: <button class="active-tag-chip" type="button" id="active-tag-chip"></button>
+        <button class="clear-tag-x" type="button" id="clear-tag" aria-label="Clear tag filter">×</button>
+      </div>
+      <div class="vm-search-wrap">
+        <svg class="vm-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="vm-search" id="vm-search" type="search" placeholder="Search" autocomplete="off" spellcheck="false" aria-label="Search workloads by name">
+        <button class="vm-search-x" type="button" id="vm-search-clear" aria-label="Clear search" hidden>×</button>
+      </div>
+      <label class="sort-control">
+        <span class="sort-label">Sort</span>
+        <select id="sort-select" class="sort-select">
+          <option value="default">Status</option>
+          <option value="name">Name</option>
+          <option value="cpu">CPU</option>
+          <option value="uptime">Uptime</option>
+          <option value="node">Node</option>
+        </select>
+      </label>
+    </div>
+  </div>
+  <div id="vms"
+       hx-get="/api/vms" hx-trigger="every {{ POLL_VMS_S }}s" hx-swap="innerHTML">
+    {% include "_vm_list.html" %}
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head">
+    <h2>Recent activity</h2>
+    <span class="extra">last 12 actions</span>
+  </div>
+  <div id="history"
+       hx-get="/api/history" hx-trigger="every 5s, load" hx-swap="innerHTML">
+    <div class="history-empty">No actions yet — start or stop a VM and it'll show up here.</div>
+  </div>
+</section>
+{% endblock %}

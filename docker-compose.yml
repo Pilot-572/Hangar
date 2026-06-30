@@ -1,0 +1,17 @@
+services:
+  hangar:
+    image: ghcr.io/pilot-572/hangar:latest
+    container_name: hangar
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      HANGAR_NODE_URL:      "https://192.168.1.10:8006"
+      HANGAR_NODE_TOKEN_ID: "hangar@pam!hangar-token"
+      HANGAR_NODE_TOKEN:    "REPLACE-WITH-TOKEN-SECRET"
+      # HANGAR_NODE_NAME:       "proxmox"        # display name, optional
+      # HANGAR_NODE_VERIFY_SSL: "false"          # set "true" if your Proxmox has a real cert
+      # HANGAR_ACCENT:          "#3b82f6"        # any hex color — themes the UI accent
+    # Advanced (multi-cluster): mount a YAML instead of using env vars.
+    # volumes:
+    #   - ./hangar.yaml:/config/hangar.yaml:ro

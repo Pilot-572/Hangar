@@ -1,0 +1,23 @@
+{% if not entries %}
+<div class="history-empty">No actions yet — start or stop a VM and it'll show up here.</div>
+{% else %}
+<ul class="history-list">
+{% for e in entries %}
+<li class="history-item{% if not e.ok %} history-fail{% endif %}">
+  <span class="history-icon" aria-hidden="true">
+    {% if e.action == 'start' %}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3" fill="currentColor"/></svg>
+    {% elif e.action == 'shutdown' %}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+    {% elif e.action == 'reboot' %}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+    {% endif %}
+  </span>
+  <span class="history-vm">{{ e.vm }}</span>
+  <span class="history-action">{{ e.action }}{% if not e.ok %} · failed{% endif %}</span>
+  <span class="history-id chip">{{ e.kind|upper }} · {{ e.vmid }}</span>
+  <span class="history-time">{{ e.t|ago }}</span>
+</li>
+{% endfor %}
+</ul>
+{% endif %}

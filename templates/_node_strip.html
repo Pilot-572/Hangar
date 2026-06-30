@@ -1,0 +1,49 @@
+<div class="strip">
+  <button class="plate plate-all filter-pill" data-node="all" type="button">
+    <div class="plate-head">
+      <span class="plate-name">All nodes</span>
+      <span class="badge"><span class="mono">{{ data.nodes|length }}</span></span>
+    </div>
+    <div class="plate-meta" style="font-size:11.5px;color:var(--text-2)">
+      <span class="mono">{{ data.vms|length }}</span> workloads
+    </div>
+  </button>
+
+{% for n in data.nodes %}
+  {% set offline = n.status != 'online' %}
+  <button class="plate filter-pill{% if not offline %} node-online{% endif %}"
+          data-node="{{ n.name }}" type="button">
+    <div class="plate-head">
+      <span class="plate-name">{{ n.name }}</span>
+      <span class="badge {% if offline %}offline{% else %}online{% endif %}">
+        <span class="dot"></span>{% if offline %}offline{% else %}online{% endif %}
+      </span>
+    </div>
+
+    {% if not offline %}
+    <div class="plate-stats">
+      <div class="plate-stat">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <span class="k">CPU</span>
+          <span class="v">{{ n.cpu_pct }}%</span>
+        </div>
+        <div class="meter">
+          <div class="meter-fill {% if n.cpu_pct >= 90 %}crit{% elif n.cpu_pct >= 70 %}warn{% endif %}"
+               style="width: {{ n.cpu_pct }}%"></div>
+        </div>
+      </div>
+      <div class="plate-stat">
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <span class="k">RAM</span>
+          <span class="v">{{ n.mem_pct }}%</span>
+        </div>
+        <div class="meter">
+          <div class="meter-fill {% if n.mem_pct >= 90 %}crit{% elif n.mem_pct >= 70 %}warn{% endif %}"
+               style="width: {{ n.mem_pct }}%"></div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </button>
+{% endfor %}
+</div>
