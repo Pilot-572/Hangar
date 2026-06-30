@@ -674,7 +674,7 @@ def settings_save():
 def settings_telegram_test():
     if not ((TELEGRAM or {}).get("bot_token") and (TELEGRAM or {}).get("chat_id")):
         return jsonify(ok=False, error="Save bot token and chat ID first."), 400
-    ok = telegram_notify("🛰️ Hangar test notification — your bot is configured ✓")
+    ok = telegram_notify("🛰️ Hangar test notification. Your bot is configured ✓")
     return jsonify(ok=ok, error=None if ok else "Telegram rejected the request.")
 
 
@@ -812,19 +812,19 @@ def action(hangar_node, pve_node, kind, vmid, action):
     except requests.HTTPError as e:
         body = (e.response.text or "")[:200] if e.response is not None else ""
         if events.get("failed"):
-            telegram_notify_async(f"❌ *{vm_name}* — {action} failed: {str(e)[:120]} {body[:80]}")
+            telegram_notify_async(f"❌ *{vm_name}*: {action} failed: {str(e)[:120]} {body[:80]}")
         add_history(action, vm_name, kind, vmid, False)
         return f'<div class="errors"><div class="e">action failed: {e} {body}</div></div>', 502
     except Exception as e:
         if events.get("failed"):
-            telegram_notify_async(f"❌ *{vm_name}* — {action} failed: {str(e)[:120]}")
+            telegram_notify_async(f"❌ *{vm_name}*: {action} failed: {str(e)[:120]}")
         add_history(action, vm_name, kind, vmid, False)
         return f'<div class="errors"><div class="e">action failed: {e}</div></div>', 502
 
     add_history(action, vm_name, kind, vmid, True)
     ev = EVENT_FOR.get(action)
     if ev and events.get(ev):
-        telegram_notify_async(f"{EMOJI_FOR.get(ev, '•')} *{vm_name}* — {ev}")
+        telegram_notify_async(f"{EMOJI_FOR.get(ev, '•')} *{vm_name}*: {ev}")
 
     data = fetch_all()
     for vm in data["vms"]:

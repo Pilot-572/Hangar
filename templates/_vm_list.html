@@ -45,7 +45,7 @@
           {% if vm.show_ip and vm.ip %}
           {% set web = vm.web_url or 'http://' ~ vm.ip %}
           <a href="{{ web }}" target="_blank" rel="noopener" class="ip-link"
-             title="Open {{ web }} in a new tab{% if not vm.web_port %} (no web port detected — set tag web:PORT or use card settings){% endif %}">
+             title="Open {{ web }} in a new tab{% if not vm.web_port %} (no web port detected; set tag web:PORT or use card settings){% endif %}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
               <polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
@@ -127,7 +127,7 @@
         <button class="btn btn-primary btn-stop btn-arm"
                 hx-post="/api/{{ vm.hangar_node }}/{{ vm.pve_node }}/{{ vm.kind }}/{{ vm.vmid }}/shutdown"
                 hx-trigger="confirmed" hx-target="#vms" hx-swap="innerHTML"
-                aria-label="Stop {{ vm.name }} — hold to confirm">
+                aria-label="Stop {{ vm.name }}, hold to confirm">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/>
           </svg>
@@ -136,8 +136,8 @@
         <button class="btn btn-icon btn-secondary btn-arm"
                 hx-post="/api/{{ vm.hangar_node }}/{{ vm.pve_node }}/{{ vm.kind }}/{{ vm.vmid }}/reboot"
                 hx-trigger="confirmed" hx-target="#vms" hx-swap="innerHTML"
-                title="Restart — hold to confirm"
-                aria-label="Restart {{ vm.name }} — hold to confirm">
+                title="Restart, hold to confirm"
+                aria-label="Restart {{ vm.name }}, hold to confirm">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
             <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>

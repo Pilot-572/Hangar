@@ -6,7 +6,7 @@ A clean, mobile-first control panel for Proxmox. Tap to start a VM, hold to stop
 
 ## One-command install (Proxmox host)
 
-The fastest path. Run this on **any node's Proxmox shell** — it creates an LXC, installs Hangar as a systemd service inside it, generates the API token, and prints the URL:
+The fastest path. Run this on **any node's Proxmox shell** and it'll create an LXC, install Hangar as a systemd service inside it, generate the API token, and print the URL:
 
 ```bash
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/Pilot-572/hangar/main/install.sh)"
@@ -26,9 +26,9 @@ You need:
   pveum user token add hangar@pam hangar-token --privsep 0
   ```
 
-  Copy the `value` field it prints — that's your token secret. Shown once.
+  Copy the `value` field it prints. That's your token secret, and it's only shown once.
 
-Then run Hangar with three env vars — no config file needed:
+Then run Hangar with three env vars, no config file needed:
 
 ```bash
 docker run -d -p 8080:8080 \
@@ -49,14 +49,14 @@ Open `http://<host>:8080`. On your phone, use "Add to Home Screen" / "Install ap
 
 | Variable                    | Required | Default     | What                                                  |
 |----------------------------|----------|-------------|-------------------------------------------------------|
-| `HANGAR_NODE_URL`          | yes      | —           | Proxmox API URL, e.g. `https://192.168.1.10:8006`     |
-| `HANGAR_NODE_TOKEN_ID`     | yes      | —           | Full token id, e.g. `hangar@pam!hangar-token`         |
-| `HANGAR_NODE_TOKEN`        | yes      | —           | Token secret (the `value` field from `pveum`)         |
+| `HANGAR_NODE_URL`          | yes      |             | Proxmox API URL, e.g. `https://192.168.1.10:8006`     |
+| `HANGAR_NODE_TOKEN_ID`     | yes      |             | Full token id, e.g. `hangar@pam!hangar-token`         |
+| `HANGAR_NODE_TOKEN`        | yes      |             | Token secret (the `value` field from `pveum`)         |
 | `HANGAR_NODE_NAME`         | no       | `proxmox`   | Display name in the UI                                |
 | `HANGAR_NODE_VERIFY_SSL`   | no       | `false`     | `true` if your Proxmox has a CA-signed cert           |
-| `HANGAR_ACCENT`            | no       | `#3b82f6`   | Any hex color — themes the UI accent                  |
+| `HANGAR_ACCENT`            | no       | `#3b82f6`   | Any hex color, themes the UI accent                   |
 
-### YAML (advanced — multi-cluster)
+### YAML (advanced, multi-cluster)
 
 If you want to point Hangar at more than one cluster, mount a YAML config:
 
@@ -88,11 +88,11 @@ docker run -d -p 8080:8080 \
 
 `chmod 600 hangar.yaml`. Don't commit it.
 
-> A single Proxmox cluster only needs **one** node in `nodes:` — the Proxmox API federates and Hangar will see all cluster members through that one endpoint. Add a second entry only when you have a genuinely separate cluster.
+> A single Proxmox cluster only needs **one** node in `nodes:`. The Proxmox API federates, so Hangar will see all cluster members through that one endpoint. Add a second entry only when you have a genuinely separate cluster.
 
 ## Theme
 
-Any hex color in `HANGAR_ACCENT` or `theme.accent`. Default is `#3b82f6` (Proxmox blue). The whole UI — buttons, meters, active filter, app icon — picks it up automatically.
+Any hex color in `HANGAR_ACCENT` or `theme.accent`. Default is `#3b82f6` (Proxmox blue). The whole UI (buttons, meters, active filter, app icon) picks it up automatically.
 
 ## Auth
 
@@ -100,21 +100,21 @@ Hangar has no app-level login. Put it behind Tailscale, a reverse proxy with aut
 
 ## Roadmap
 
-- v0.1 — what you see here: list, start/hold-to-stop, per-node and per-VM CPU/RAM, dark mode, PWA, theme color.
-- v0.2 — feedback-driven. Likely: WoL, backup status, settings UI, snapshots.
+- v0.1: what you see here. List, start/hold-to-stop, per-node and per-VM CPU/RAM, dark mode, PWA, theme color.
+- v0.2: feedback-driven. Likely WoL, backup status, settings UI, snapshots.
 
 Open an issue with what you want next.
 
 ## FAQ
 
 **Why not just use the Proxmox web UI?**
-On a desktop, do. On a phone, the Proxmox UI is awkward — Hangar is one screen, one tap.
+On a desktop, do. On a phone the Proxmox UI is awkward. Hangar is one screen, one tap.
 
 **iOS / Android / Windows app?**
 The PWA installs on all four. No App Store, no Play Store.
 
 **Why hold-to-stop?**
-A single tap on a phone is too easy to mis-fire — a 1-second press confirms intent without a modal. The button shows a small progress bar while held; release any time before 1s cancels.
+A single tap on a phone is too easy to mis-fire, so a 1-second press confirms intent without needing a modal. The button shows a small progress bar while held. Release any time before 1s cancels.
 
 ## License
 

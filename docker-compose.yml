@@ -11,7 +11,7 @@ services:
       HANGAR_NODE_TOKEN:    "REPLACE-WITH-TOKEN-SECRET"
       # HANGAR_NODE_NAME:       "proxmox"        # display name, optional
       # HANGAR_NODE_VERIFY_SSL: "false"          # set "true" if your Proxmox has a real cert
-      # HANGAR_ACCENT:          "#3b82f6"        # any hex color — themes the UI accent
+      # HANGAR_ACCENT:          "#3b82f6"        # any hex color, themes the UI accent
     # Advanced (multi-cluster): mount a YAML instead of using env vars.
     # volumes:
     #   - ./hangar.yaml:/config/hangar.yaml:ro

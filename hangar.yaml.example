@@ -1,6 +1,6 @@
-# Hangar advanced config (multi-cluster). For a single Proxmox host, just use env vars —
+# Hangar advanced config (multi-cluster). For a single Proxmox host, just use env vars;
 # see the README's Quickstart. Mount this file at /config/hangar.yaml inside the container.
-# chmod 600 hangar.yaml — protect the token secrets.
+# chmod 600 hangar.yaml to protect the token secrets.
 
 theme:
   # Any hex color. Defaults to "#3b82f6" (Proxmox blue) if unset.

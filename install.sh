@@ -29,7 +29,7 @@ fail()  { printf "\033[31m✗ %s\033[0m\n" "$*" >&2; exit 1; }
 done_() { printf "\033[32m✓ %s\033[0m\n" "$*"; }
 
 command -v pveversion >/dev/null || fail "This installer must be run on a Proxmox host."
-command -v pct       >/dev/null || fail "pct not found — needs Proxmox 7+."
+command -v pct       >/dev/null || fail "pct not found, needs Proxmox 7+."
 command -v pveum     >/dev/null || fail "pveum not found."
 
 bold "Hangar installer"
@@ -60,7 +60,7 @@ pveum acl modify / -user hangar@pam -role Administrator >/dev/null
 
 TOKEN_JSON=$(pveum user token add hangar@pam hangar-token --privsep 0 --output-format json 2>/dev/null || true)
 if [[ -z "$TOKEN_JSON" ]]; then
-  warn "Token 'hangar-token' already exists — rotating."
+  warn "Token 'hangar-token' already exists, rotating."
   pveum user token remove hangar@pam hangar-token >/dev/null
   TOKEN_JSON=$(pveum user token add hangar@pam hangar-token --privsep 0 --output-format json)
 fi
@@ -124,7 +124,7 @@ chmod 600 /etc/hangar/hangar.yaml
 
 cat > /etc/systemd/system/hangar.service <<'EOF'
 [Unit]
-Description=Hangar — mobile control panel for Proxmox
+Description=Hangar, mobile control panel for Proxmox
 After=network-online.target
 Wants=network-online.target
 
@@ -158,7 +158,7 @@ for i in $(seq 1 30); do
   sleep 1
 done
 
-[[ -z "$LXC_IP" ]] && fail "Container has no IP yet — check DHCP on $NET_BRIDGE."
+[[ -z "$LXC_IP" ]] && fail "Container has no IP yet. Check DHCP on $NET_BRIDGE."
 
 echo
 done_ "Hangar is running"
