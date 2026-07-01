@@ -13,6 +13,21 @@ Hangar is a LAN tool. It has **no built-in login**.
 - `verify_ssl: false` is the default because most homelabs run PVE on a self-signed cert. On a shared LAN this is MITM-able. Set `verify_ssl: true` (or `HANGAR_NODE_VERIFY_SSL=true`) if your Proxmox has a real cert.
 - Anyone who can reach port 8080 can start, stop and reboot every VM. Cross-origin POSTs are blocked (as of v0.1.1), but there's still no login, so treat the port as fully trusted.
 
+## Login
+
+v0.1.3 added a single-account login. Set username + password at first-run install; log in at `http://<host>:8080/login` after. Session lives 30 days sliding.
+
+**Forgot the password?**
+
+```bash
+pct exec <CTID> -- /opt/hangar/.venv/bin/python -c "from app import set_credentials; set_credentials('admin', 'newpassword')"
+systemctl restart hangar
+```
+
+**Reverse-proxy auth already in front?**
+
+Set `HANGAR_DISABLE_AUTH=1` to skip the built-in login. Any auth in front of Hangar (Authelia, Caddy basic-auth, Cloudflare Access, Tailscale) should be enough.
+
 ## One-command install (Proxmox host)
 
 The fastest path. Run this on **any node's Proxmox shell** and it'll create an LXC, install Hangar as a systemd service inside it, generate the API token, and print the URL:

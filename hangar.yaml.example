@@ -2,6 +2,13 @@
 # see the README's Quickstart. Mount this file at /config/hangar.yaml inside the container.
 # chmod 600 hangar.yaml to protect the token secrets.
 
+# Set via first-run wizard, or reset via:
+#   pct exec <CTID> -- /opt/hangar/.venv/bin/python -c \
+#     "from app import set_credentials; set_credentials('admin', 'newpw')"
+auth:
+  username: admin
+  password_hash: "$argon2id$v=19$m=65536,t=3,p=4$..."
+
 theme:
   # Any hex color. Defaults to "#3b82f6" (Proxmox blue) if unset.
   accent: "#3b82f6"
