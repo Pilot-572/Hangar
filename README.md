@@ -6,12 +6,12 @@ A clean, mobile-first control panel for Proxmox. Tap to start a VM, hold to stop
 
 ## Security (read first)
 
-Hangar is a LAN tool. It has **no built-in login**.
+Hangar is a LAN tool. Login is opt-in but on by default from v0.1.3. Set username and password at install to gate access.
 
 - Do not expose port 8080 to the internet. No port-forwarding, no naked reverse proxy without auth. Use Tailscale, a reverse proxy with auth (Authelia, Caddy basic-auth), or Cloudflare Access.
 - The Proxmox API token uses a custom **HangarOps** role with only the privileges Hangar actually calls (`Sys.Audit, VM.Audit, VM.PowerMgmt, VM.Config.Options, VM.GuestAgent.Audit`). A compromise still lets an attacker start/stop every VM and read guest metadata, but not create/delete VMs, change disks, mount storage, or edit ACLs. Rotate the token if you stop using Hangar.
 - `verify_ssl: false` is the default because most homelabs run PVE on a self-signed cert. On a shared LAN this is MITM-able. Set `verify_ssl: true` (or `HANGAR_NODE_VERIFY_SSL=true`) if your Proxmox has a real cert.
-- Anyone who can reach port 8080 can start, stop and reboot every VM. Cross-origin POSTs are blocked (as of v0.1.1), but there's still no login, so treat the port as fully trusted.
+- Cross-origin POSTs are blocked (as of v0.1.1). A single-account login gates every route by default (v0.1.3). Without login, port 8080 is fully trusted. With login enabled, only users holding the password can access the port. Set `HANGAR_DISABLE_AUTH=1` to bypass built-in login if you already run an auth proxy.
 
 ## Login
 
@@ -124,10 +124,6 @@ docker run -d -p 8080:8080 \
 ## Theme
 
 Any hex color in `HANGAR_ACCENT` or `theme.accent`. Default is `#3b82f6` (Proxmox blue). The whole UI (buttons, meters, active filter, app icon) picks it up automatically.
-
-## Auth
-
-Hangar has no app-level login (see [Security](#security-read-first) at the top). Put it behind Tailscale, a reverse proxy with auth (Authelia, Caddy basic-auth, nginx-auth-request), or Cloudflare Tunnel.
 
 ## Roadmap
 
