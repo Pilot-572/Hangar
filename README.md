@@ -21,7 +21,9 @@ The fastest path. Run this on **any node's Proxmox shell** and it'll create an L
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/Pilot-572/hangar/main/install.sh)"
 ```
 
-Tunables (set as env before running): `CTID`, `HOSTNAME`, `STORAGE`, `NET_BRIDGE`, `MEMORY`, `CORES`, `ACCENT`.
+Run this **on the Proxmox host shell**. It creates the LXC for you.
+
+Tunables (set as env before running): `CTID`, `LXC_HOSTNAME`, `STORAGE`, `TEMPLATE_STORAGE`, `NET_BRIDGE`, `MEMORY`, `CORES`, `ACCENT`, `REPO`, `REF`.
 
 ## Manual quickstart (Docker on any host)
 

@@ -236,7 +236,9 @@ def _card_settings(pve_node, kind, vmid):
 
 
 def save_config():
-    """Write the current in-memory config to YAML, preserving secrets."""
+    """Write the current in-memory config to YAML, preserving secrets.
+    Atomic (tmp + os.replace) and 0600 so the plaintext Admin token isn't
+    world-readable and a concurrent save can't corrupt the file."""
     cfg = {
         "theme": {"accent": ACCENT, "scheme": THEME_SCHEME},
         "settings": {"hold_ms": HOLD_MS_CFG},
@@ -244,8 +246,11 @@ def save_config():
         "nodes": NODES,
         "cards": CARDS,
     }
-    with open(CONFIG_PATH, "w") as f:
+    tmp = CONFIG_PATH + ".tmp"
+    with open(tmp, "w") as f:
         yaml_lib.dump(cfg, f, default_flow_style=False, sort_keys=False)
+    os.chmod(tmp, 0o600)
+    os.replace(tmp, CONFIG_PATH)
 
 
 def reload_globals():
@@ -608,6 +613,13 @@ def setup_submit():
     name = (request.form.get("name") or "proxmox").strip()
     verify_ssl = "verify_ssl" in request.form
 
+    # Users often paste the whole Authorization header value into token_id.
+    # Accept "PVEAPIToken=user@realm!tokname=secretvalue" and split it.
+    if token_id.startswith("PVEAPIToken="):
+        token_id = token_id[len("PVEAPIToken="):]
+    if "=" in token_id and not token_secret:
+        token_id, token_secret = token_id.rsplit("=", 1)
+
     form_state = {"url": url, "token_id": token_id, "name": name, "verify_ssl": verify_ssl}
 
     if not (url and token_id and token_secret):
@@ -639,8 +651,11 @@ def setup_submit():
         }],
     }
     try:
-        with open(CONFIG_PATH, "w") as f:
+        tmp = CONFIG_PATH + ".tmp"
+        with open(tmp, "w") as f:
             yaml_lib.dump(new_cfg, f, default_flow_style=False, sort_keys=False)
+        os.chmod(tmp, 0o600)
+        os.replace(tmp, CONFIG_PATH)
     except Exception as e:
         return render_template(
             "setup.html",
