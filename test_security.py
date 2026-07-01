@@ -70,4 +70,25 @@ check("verify_credentials accepts correct pair", verify_credentials("admin", "hu
 check("verify_credentials rejects wrong password", not verify_credentials("admin", "wrong"))
 check("verify_credentials rejects wrong username", not verify_credentials("root", "hunter2"))
 
+# --- Auth guard ---
+# fresh app state: credentials still set from prior test; ensure session is empty
+c2 = app.test_client()
+
+# Unauthed HTMX GET on a protected endpoint returns 401 with HX-Redirect header
+r = c2.get("/api/vms", headers={"HX-Request": "true"})
+check("HTMX GET blocked when unauthed", r.status_code == 401)
+check("HTMX 401 carries HX-Redirect to /login", r.headers.get("HX-Redirect") == "/login")
+
+# Unauthed browser GET of / redirects to /login
+r = c2.get("/")
+check("browser GET / redirects to /login when unauthed", r.status_code == 302 and r.headers["Location"].endswith("/login"))
+
+# /login itself is reachable without auth
+r = c2.get("/login")
+check("/login accessible unauthed", r.status_code == 200)
+
+# /static/* reachable without auth (favicon path stub)
+r = c2.get("/static/does-not-exist.css")
+check("/static/* not blocked by auth (404 not 302)", r.status_code == 404)
+
 print("\nAll security smoke tests passed.")

@@ -164,6 +164,43 @@ def _csrf_guard():
     abort(403, "cross-origin request blocked")
 
 
+# Paths that never require a session. `/setup` is added dynamically when
+# _setup_required() is true; same for `/auth_setup` when _auth_setup_required().
+_AUTH_EXEMPT = {"/login", "/logout", "/manifest.json", "/favicon.ico"}
+
+
+@app.before_request
+def _login_required():
+    """Redirect unauthenticated browser requests to /login; return 401 with
+    HX-Redirect for HTMX so polling endpoints don't swap the login page into
+    #vms."""
+    if _truthy(os.environ.get("HANGAR_DISABLE_AUTH", "")):
+        return
+    p = request.path
+    if p.startswith("/static/"):
+        return
+    if p in _AUTH_EXEMPT:
+        return
+    if p == "/setup" and _setup_required():
+        return
+    if p == "/auth_setup" and _auth_setup_required():
+        return
+    # Fresh install: no nodes yet -> land on / which renders setup.html.
+    # Existing install without auth: send them to /auth_setup.
+    if _auth_setup_required():
+        if request.headers.get("HX-Request") == "true":
+            return ("", 401, {"HX-Redirect": "/auth_setup"})
+        return redirect("/auth_setup")
+    # Pre-auth setup: no credentials configured yet, allow access
+    if not (AUTH_USERNAME and AUTH_HASH):
+        return
+    if session.get("user"):
+        return
+    if request.headers.get("HX-Request") == "true":
+        return ("", 401, {"HX-Redirect": "/login"})
+    return redirect("/login")
+
+
 def _truthy(v):
     return str(v).strip().lower() in ("1", "true", "yes", "on")
 
@@ -828,7 +865,7 @@ def settings_telegram_test():
 
 @app.route("/login", methods=["GET"])
 def login_page():
-    if _setup_required() or _auth_setup_required():
+    if (_setup_required() and not (AUTH_USERNAME and AUTH_HASH)) or _auth_setup_required():
         return redirect("/")
     if session.get("user"):
         return redirect("/")
@@ -837,7 +874,7 @@ def login_page():
 
 @app.route("/login", methods=["POST"])
 def login_submit():
-    if _setup_required() or _auth_setup_required():
+    if (_setup_required() and not (AUTH_USERNAME and AUTH_HASH)) or _auth_setup_required():
         return redirect("/")
     username = (request.form.get("username") or "").strip()
     password = request.form.get("password") or ""
