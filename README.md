@@ -9,7 +9,7 @@ A clean, mobile-first control panel for Proxmox. Tap to start a VM, hold to stop
 Hangar is a LAN tool. It has **no built-in login**.
 
 - Do not expose port 8080 to the internet. No port-forwarding, no naked reverse proxy without auth. Use Tailscale, a reverse proxy with auth (Authelia, Caddy basic-auth), or Cloudflare Access.
-- The Proxmox API token Hangar uses has **Administrator** role. If Hangar (or the box it runs on) is compromised, that's full cluster root. Rotate the token if you stop using Hangar.
+- The Proxmox API token uses a custom **HangarOps** role with only the privileges Hangar actually calls (`Sys.Audit, VM.Audit, VM.PowerMgmt, VM.Config.Options, VM.GuestAgent.Audit`). A compromise still lets an attacker start/stop every VM and read guest metadata, but not create/delete VMs, change disks, mount storage, or edit ACLs. Rotate the token if you stop using Hangar.
 - `verify_ssl: false` is the default because most homelabs run PVE on a self-signed cert. On a shared LAN this is MITM-able. Set `verify_ssl: true` (or `HANGAR_NODE_VERIFY_SSL=true`) if your Proxmox has a real cert.
 - Anyone who can reach port 8080 can start, stop and reboot every VM. Cross-origin POSTs are blocked (as of v0.1.1), but there's still no login, so treat the port as fully trusted.
 
@@ -33,11 +33,16 @@ You need:
 - One API token. On any Proxmox node's shell:
 
   ```bash
-  pveum acl modify / -user hangar@pam -role Administrator
+  pveum user add hangar@pam
+  pveum role add HangarOps -privs "Sys.Audit,VM.Audit,VM.PowerMgmt,VM.Config.Options,VM.GuestAgent.Audit"
+  pveum acl modify / -user hangar@pam -role HangarOps
   pveum user token add hangar@pam hangar-token --privsep 0
   ```
 
   Copy the `value` field it prints. That's your token secret, and it's only shown once.
+
+  > Upgrading from v0.1.2 or earlier? Your token has `Administrator` role. Downgrade with:
+  > `pveum role add HangarOps -privs "Sys.Audit,VM.Audit,VM.PowerMgmt,VM.Config.Options,VM.GuestAgent.Audit" && pveum acl modify / -user hangar@pam -role HangarOps && pveum acl delete / -user hangar@pam -role Administrator`
 
 Then run Hangar with three env vars, no config file needed:
 

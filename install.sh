@@ -23,7 +23,7 @@ ACCENT="${ACCENT:-#3b82f6}"
 REPO="${REPO:-https://github.com/Pilot-572/hangar}"
 # Pin to a release tag so a bad commit on main doesn't own every fresh install.
 # Override with REF=main for development.
-REF="${REF:-v0.1.2}"
+REF="${REF:-v0.1.3}"
 
 bold()  { printf "\033[1m%s\033[0m\n" "$*"; }
 info()  { printf "\033[36m• %s\033[0m\n" "$*"; }
@@ -56,10 +56,21 @@ if ! pveam list "$TEMPLATE_STORAGE" 2>/dev/null | awk '{print $1}' | grep -q "$T
 fi
 TEMPLATE_REF="$TEMPLATE_STORAGE:vztmpl/$TEMPLATE_NAME"
 
-# Proxmox API user + token (idempotent)
-info "Ensuring hangar@pam user + token exist…"
+# Proxmox API user + custom least-priv role + token (idempotent).
+# HangarOps has exactly what app.py calls:
+#   Sys.Audit           -> GET /cluster/resources, node CPU/mem
+#   VM.Audit            -> GET /nodes/*/config (tags, LXC IP)
+#   VM.PowerMgmt        -> POST /status/{start,shutdown,reboot}
+#   VM.Config.Options   -> PUT /config (tag edits)
+#   VM.GuestAgent.Audit -> GET /agent/network-get-interfaces (QEMU IP)
+HANGAR_PRIVS="Sys.Audit,VM.Audit,VM.PowerMgmt,VM.Config.Options,VM.GuestAgent.Audit"
+info "Ensuring hangar@pam user + HangarOps role + token exist…"
 pveum user add hangar@pam --comment "Hangar API user" 2>/dev/null || true
-pveum acl modify / -user hangar@pam -role Administrator >/dev/null
+pveum role add HangarOps -privs "$HANGAR_PRIVS" 2>/dev/null \
+  || pveum role modify HangarOps -privs "$HANGAR_PRIVS" >/dev/null
+pveum acl modify / -user hangar@pam -role HangarOps >/dev/null
+# Downgrade any legacy Administrator ACL from earlier Hangar versions.
+pveum acl delete / -user hangar@pam -role Administrator 2>/dev/null || true
 
 TOKEN_JSON=$(pveum user token add hangar@pam hangar-token --privsep 0 --output-format json 2>/dev/null || true)
 if [[ -z "$TOKEN_JSON" ]]; then
@@ -161,15 +172,22 @@ systemctl enable --now hangar >/dev/null
 # Wait for Hangar to come up
 info "Waiting for Hangar to start…"
 LXC_IP=""
+HANGAR_UP=""
 for i in $(seq 1 30); do
   LXC_IP=$(pct exec "$CTID" -- bash -c "ip -4 -o addr show eth0 | awk '{print \$4}' | cut -d/ -f1" 2>/dev/null || true)
   if [[ -n "$LXC_IP" ]] && curl -fsS "http://$LXC_IP:8080/" -o /dev/null --max-time 2 2>/dev/null; then
+    HANGAR_UP=1
     break
   fi
   sleep 1
 done
 
 [[ -z "$LXC_IP" ]] && fail "Container has no IP yet. Check DHCP on $NET_BRIDGE."
+if [[ -z "$HANGAR_UP" ]]; then
+  warn "LXC has IP $LXC_IP but Hangar didn't respond in 30s. systemd status:"
+  pct exec "$CTID" -- systemctl status hangar --no-pager --lines 20 || true
+  fail "Hangar service not responding. Check logs: pct exec $CTID -- journalctl -u hangar -n 50"
+fi
 
 echo
 done_ "Hangar is running"
