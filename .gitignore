@@ -11,3 +11,4 @@ _*.log
 _*.err
 _*.png
 _*.html
+.superpowers/
