@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block body %}
+<section class="section" style="max-width: 24rem; margin: 0 auto;">
+  <div style="margin-bottom: 1.25rem;">
+    <h2 style="font-size:18px; font-weight:600; margin-bottom:.35rem; color:var(--text);">Set an admin password</h2>
+    <p style="font-size: 13px; color: var(--text-2); line-height: 1.5;">
+      Hangar v0.1.3 added login. Pick a username and password. You'll use these to sign in next time.
+    </p>
+  </div>
+
+  {% if error %}
+  <div class="errors" style="margin-bottom: 1rem;">
+    <div class="e">{{ error }}</div>
+  </div>
+  {% endif %}
+
+  <form method="POST" action="/auth_setup" class="setup-form" autocomplete="on">
+    <label class="field">
+      <span class="field-label">Username <span class="field-hint">blank = admin</span></span>
+      <input name="username" type="text" placeholder="admin" autocomplete="username"
+             value="{{ username or '' }}">
+    </label>
+    <label class="field">
+      <span class="field-label">Password</span>
+      <input name="password" type="password" required autocomplete="new-password" autofocus>
+    </label>
+    <button type="submit" class="btn btn-primary btn-go" style="margin-top:.65rem; width:100%;">
+      <span>Set password</span>
+    </button>
+  </form>
+</section>
+
+<style>
+  .setup-form { display: flex; flex-direction: column; gap: .85rem; }
+  .field { display: flex; flex-direction: column; gap: .35rem; }
+  .field-label {
+    font-size: 12px; font-weight: 600; color: var(--text);
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .field-hint { font-weight: 400; color: var(--text-3); font-size: 11px; }
+  .field input {
+    height: 42px; padding: 0 .8rem;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface); color: var(--text);
+    font-size: 14px; font-family: 'Geist Mono', ui-monospace, monospace;
+  }
+  .field input:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+</style>
+{% endblock %}

@@ -747,6 +747,8 @@ def setup_submit():
     token_secret = (request.form.get("token_secret") or "").strip()
     name = (request.form.get("name") or "proxmox").strip()
     verify_ssl = "verify_ssl" in request.form
+    admin_username = (request.form.get("admin_username") or "").strip() or "admin"
+    admin_password = request.form.get("admin_password") or ""
 
     # Users often paste the whole Authorization header value into token_id.
     # Accept "PVEAPIToken=user@realm!tokname=secretvalue" and split it.
@@ -755,9 +757,9 @@ def setup_submit():
     if "=" in token_id and not token_secret:
         token_id, token_secret = token_id.rsplit("=", 1)
 
-    form_state = {"url": url, "token_id": token_id, "name": name, "verify_ssl": verify_ssl}
+    form_state = {"url": url, "token_id": token_id, "name": name, "verify_ssl": verify_ssl, "admin_username": admin_username}
 
-    if not (url and token_id and token_secret):
+    if not (url and token_id and token_secret and admin_password):
         return render_template("setup.html", error="All fields are required.", form=form_state)
 
     try:
@@ -799,6 +801,10 @@ def setup_submit():
         )
 
     reload_globals()
+    set_credentials(admin_username, admin_password)
+    session.clear()
+    session["user"] = AUTH_USERNAME
+    session.permanent = True
     return redirect("/")
 
 
@@ -890,6 +896,28 @@ def login_submit():
 def logout():
     session.clear()
     return redirect("/login")
+
+
+@app.route("/auth_setup", methods=["GET"])
+def auth_setup_page():
+    if not _auth_setup_required():
+        return redirect("/")
+    return render_template("auth_setup.html")
+
+
+@app.route("/auth_setup", methods=["POST"])
+def auth_setup_submit():
+    if not _auth_setup_required():
+        return redirect("/")
+    username = (request.form.get("username") or "").strip() or "admin"
+    password = request.form.get("password") or ""
+    if not password:
+        return render_template("auth_setup.html", error="Password is required.", username=username), 400
+    set_credentials(username, password)
+    session.clear()
+    session["user"] = username
+    session.permanent = True
+    return redirect("/")
 
 
 @app.route("/api/strip")

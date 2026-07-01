@@ -40,6 +40,16 @@ pveum user token add hangar@pam hangar-token --privsep 0</pre>
       <input name="name" type="text" placeholder="proxmox"
              value="{{ (form and form.name) or 'proxmox' }}">
     </label>
+    <label class="field">
+      <span class="field-label">Admin username <span class="field-hint">blank = admin</span></span>
+      <input name="admin_username" type="text" placeholder="admin"
+             value="{{ (form and form.admin_username) or '' }}" autocomplete="username">
+    </label>
+    <label class="field">
+      <span class="field-label">Admin password</span>
+      <input name="admin_password" type="password" required placeholder="(you'll need this to sign in)"
+             autocomplete="new-password">
+    </label>
     <label class="checkbox">
       <input name="verify_ssl" type="checkbox" {% if form and form.verify_ssl %}checked{% endif %}>
       <span>Verify SSL certificate (uncheck for typical homelab self-signed)</span>
