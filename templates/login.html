@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block body %}
+<section class="section" style="max-width: 24rem; margin: 0 auto;">
+  <div style="margin-bottom: 1.25rem;">
+    <h2 style="font-size:18px; font-weight:600; margin-bottom:.35rem; color:var(--text);">Sign in to Hangar</h2>
+    <p style="font-size: 13px; color: var(--text-2); line-height: 1.5;">
+      Enter the credentials you set at install.
+    </p>
+  </div>
+
+  {% if error %}
+  <div class="errors" style="margin-bottom: 1rem;">
+    <div class="e">{{ error }}</div>
+  </div>
+  {% endif %}
+
+  <form method="POST" action="/login" class="setup-form" autocomplete="on">
+    <label class="field">
+      <span class="field-label">Username</span>
+      <input name="username" type="text" required autocomplete="username"
+             value="{{ username or '' }}" autofocus>
+    </label>
+    <label class="field">
+      <span class="field-label">Password</span>
+      <input name="password" type="password" required autocomplete="current-password">
+    </label>
+    <button type="submit" class="btn btn-primary btn-go" style="margin-top:.65rem; width:100%;">
+      <span>Sign in</span>
+    </button>
+  </form>
+</section>
+
+<style>
+  .setup-form { display: flex; flex-direction: column; gap: .85rem; }
+  .field { display: flex; flex-direction: column; gap: .35rem; }
+  .field-label { font-size: 12px; font-weight: 600; color: var(--text); }
+  .field input {
+    height: 42px; padding: 0 .8rem;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface); color: var(--text);
+    font-size: 14px; font-family: 'Geist Mono', ui-monospace, monospace;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .field input:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+</style>
+{% endblock %}

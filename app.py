@@ -826,6 +826,35 @@ def settings_telegram_test():
     return jsonify(ok=ok, error=None if ok else "Telegram rejected the request.")
 
 
+@app.route("/login", methods=["GET"])
+def login_page():
+    if _setup_required() or _auth_setup_required():
+        return redirect("/")
+    if session.get("user"):
+        return redirect("/")
+    return render_template("login.html")
+
+
+@app.route("/login", methods=["POST"])
+def login_submit():
+    if _setup_required() or _auth_setup_required():
+        return redirect("/")
+    username = (request.form.get("username") or "").strip()
+    password = request.form.get("password") or ""
+    if not verify_credentials(username, password):
+        return render_template("login.html", error="Invalid username or password.", username=username), 401
+    session.clear()
+    session["user"] = username
+    session.permanent = True
+    return redirect("/")
+
+
+@app.route("/logout", methods=["POST"])
+def logout():
+    session.clear()
+    return redirect("/login")
+
+
 @app.route("/api/strip")
 def strip():
     return render_template("_node_strip.html", data=fetch_all())
