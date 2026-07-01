@@ -1,4 +1,5 @@
 """Hangar - mobile control panel for Proxmox."""
+import ipaddress
 import os
 import re
 import socket
@@ -11,6 +12,7 @@ import requests
 import urllib3
 import yaml as yaml_lib
 from flask import Flask, abort, jsonify, redirect, render_template, request
+from markupsafe import escape
 
 # Common homelab web ports in priority order. First open one wins.
 WEB_PORT_CANDIDATES = (
@@ -97,6 +99,27 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 app.jinja_env.auto_reload = True
+
+
+@app.before_request
+def _csrf_guard():
+    """Block cross-origin state-changing requests. LAN attacker's webpage can't
+    POST /api/.../shutdown from evil.com without a matching Origin/Referer."""
+    if request.method in ("GET", "HEAD", "OPTIONS"):
+        return
+    # HTMX sets this header on every request it makes; browsers can't set custom
+    # headers on simple cross-origin fetches without a CORS preflight (which we
+    # never grant), so its presence is a same-origin signal.
+    if request.headers.get("HX-Request") == "true":
+        return
+    expected = f"{request.scheme}://{request.host}"
+    origin = request.headers.get("Origin", "")
+    if origin and origin == expected:
+        return
+    referer = request.headers.get("Referer", "")
+    if referer == expected or referer.startswith(expected + "/"):
+        return
+    abort(403, "cross-origin request blocked")
 
 
 def _truthy(v):
@@ -303,6 +326,15 @@ def _fetch_one(n):
     return r.json()["data"]
 
 
+def _safe_ipv4(s):
+    """Return canonical IPv4 string, or None. Guards against hostile guest-agent
+    values like 'javascript:fetch(...)' that would XSS via <a href="{{ip}}">."""
+    try:
+        return str(ipaddress.IPv4Address((s or "").strip()))
+    except (ipaddress.AddressValueError, ValueError):
+        return None
+
+
 def _get_vm_extras(n, pve_node, kind, vmid, status):
     """Fetch tags + IP for one VM. Best-effort: failures return defaults."""
     out = {"tags": [], "ip": None}
@@ -322,7 +354,7 @@ def _get_vm_extras(n, pve_node, kind, vmid, status):
             net0 = cfg.get("net0", "")
             m = re.search(r"ip=([0-9.]+)/", net0)
             if m:
-                out["ip"] = m.group(1)
+                out["ip"] = _safe_ipv4(m.group(1))
     except Exception:
         pass
 
@@ -339,8 +371,9 @@ def _get_vm_extras(n, pve_node, kind, vmid, status):
                 if iface.get("name") == "lo":
                     continue
                 inet = iface.get("inet") or ""
-                if inet and not inet.startswith("127."):
-                    out["ip"] = inet.split("/")[0]
+                ip = _safe_ipv4(inet.split("/")[0])
+                if ip and not ip.startswith("127."):
+                    out["ip"] = ip
                     break
         except Exception:
             pass
@@ -360,8 +393,10 @@ def _get_vm_extras(n, pve_node, kind, vmid, status):
                     if name in ("lo", "Loopback Pseudo-Interface 1") or name.startswith("docker"):
                         continue
                     for addr in iface.get("ip-addresses", []):
-                        ip = addr.get("ip-address", "")
-                        if addr.get("ip-address-type") == "ipv4" and ip and not ip.startswith("127."):
+                        if addr.get("ip-address-type") != "ipv4":
+                            continue
+                        ip = _safe_ipv4(addr.get("ip-address", ""))
+                        if ip and not ip.startswith("127."):
                             out["ip"] = ip
                             return out
         except Exception:
@@ -720,9 +755,9 @@ def set_tags(hangar_node, pve_node, kind, vmid):
         r.raise_for_status()
     except requests.HTTPError as e:
         body = (e.response.text or "")[:200] if e.response is not None else ""
-        return f'<div class="errors"><div class="e">tag update failed: {e} {body}</div></div>', 502
+        return f'<div class="errors"><div class="e">tag update failed: {escape(str(e))} {escape(body)}</div></div>', 502
     except Exception as e:
-        return f'<div class="errors"><div class="e">tag update failed: {e}</div></div>', 502
+        return f'<div class="errors"><div class="e">tag update failed: {escape(str(e))}</div></div>', 502
     _invalidate()
     return render_template("_vm_list.html", data=fetch_all())
 
@@ -777,7 +812,7 @@ def card_save(hangar_node, pve_node, kind, vmid):
     try:
         save_config()
     except Exception as e:
-        return f'<div class="errors"><div class="e">save failed: {e}</div></div>', 500
+        return f'<div class="errors"><div class="e">save failed: {escape(str(e))}</div></div>', 500
 
     if port is not None:
         ip_for_vm = None
@@ -814,12 +849,12 @@ def action(hangar_node, pve_node, kind, vmid, action):
         if events.get("failed"):
             telegram_notify_async(f"❌ *{vm_name}*: {action} failed: {str(e)[:120]} {body[:80]}")
         add_history(action, vm_name, kind, vmid, False)
-        return f'<div class="errors"><div class="e">action failed: {e} {body}</div></div>', 502
+        return f'<div class="errors"><div class="e">action failed: {escape(str(e))} {escape(body)}</div></div>', 502
     except Exception as e:
         if events.get("failed"):
             telegram_notify_async(f"❌ *{vm_name}*: {action} failed: {str(e)[:120]}")
         add_history(action, vm_name, kind, vmid, False)
-        return f'<div class="errors"><div class="e">action failed: {e}</div></div>', 502
+        return f'<div class="errors"><div class="e">action failed: {escape(str(e))}</div></div>', 502
 
     add_history(action, vm_name, kind, vmid, True)
     ev = EVENT_FOR.get(action)

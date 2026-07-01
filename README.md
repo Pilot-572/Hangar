@@ -4,6 +4,15 @@ A clean, mobile-first control panel for Proxmox. Tap to start a VM, hold to stop
 
 ![demo](docs/demo.gif)
 
+## Security (read first)
+
+Hangar is a LAN tool. It has **no built-in login**.
+
+- Do not expose port 8080 to the internet. No port-forwarding, no naked reverse proxy without auth. Use Tailscale, a reverse proxy with auth (Authelia, Caddy basic-auth), or Cloudflare Access.
+- The Proxmox API token Hangar uses has **Administrator** role. If Hangar (or the box it runs on) is compromised, that's full cluster root. Rotate the token if you stop using Hangar.
+- `verify_ssl: false` is the default because most homelabs run PVE on a self-signed cert. On a shared LAN this is MITM-able. Set `verify_ssl: true` (or `HANGAR_NODE_VERIFY_SSL=true`) if your Proxmox has a real cert.
+- Anyone who can reach port 8080 can start, stop and reboot every VM. Cross-origin POSTs are blocked (as of v0.1.1), but there's still no login, so treat the port as fully trusted.
+
 ## One-command install (Proxmox host)
 
 The fastest path. Run this on **any node's Proxmox shell** and it'll create an LXC, install Hangar as a systemd service inside it, generate the API token, and print the URL:
@@ -96,7 +105,7 @@ Any hex color in `HANGAR_ACCENT` or `theme.accent`. Default is `#3b82f6` (Proxmo
 
 ## Auth
 
-Hangar has no app-level login. Put it behind Tailscale, a reverse proxy with auth (Authelia, Caddy basic-auth, nginx-auth-request), or Cloudflare Tunnel.
+Hangar has no app-level login (see [Security](#security-read-first) at the top). Put it behind Tailscale, a reverse proxy with auth (Authelia, Caddy basic-auth, nginx-auth-request), or Cloudflare Tunnel.
 
 ## Roadmap
 

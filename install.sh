@@ -21,6 +21,9 @@ MEMORY="${MEMORY:-256}"
 CORES="${CORES:-1}"
 ACCENT="${ACCENT:-#3b82f6}"
 REPO="${REPO:-https://github.com/Pilot-572/hangar}"
+# Pin to a release tag so a bad commit on main doesn't own every fresh install.
+# Override with REF=main for development.
+REF="${REF:-v0.1.1}"
 
 bold()  { printf "\033[1m%s\033[0m\n" "$*"; }
 info()  { printf "\033[36m• %s\033[0m\n" "$*"; }
@@ -112,7 +115,7 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 apt-get install -y -qq python3 python3-pip python3-venv git curl ca-certificates >/dev/null
 
-git clone --depth 1 '$REPO' /opt/hangar
+git clone --depth 1 --branch '$REF' '$REPO' /opt/hangar
 python3 -m venv /opt/hangar/.venv
 /opt/hangar/.venv/bin/pip install --no-cache-dir -q -r /opt/hangar/requirements.txt
 
