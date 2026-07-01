@@ -1,8 +1,10 @@
 """Smoke tests for v0.1.1 security fixes. Run: python test_security.py"""
 import os
+import tempfile
 
-# Point at a nonexistent config so load_config() returns an empty setup.
-os.environ["HANGAR_CONFIG"] = "/nonexistent-hangar-test.yaml"
+# Point at a temp config so load_config() returns an empty setup and tests can write to it.
+_temp_config = tempfile.NamedTemporaryFile(suffix=".yaml", delete=False).name
+os.environ["HANGAR_CONFIG"] = _temp_config
 
 from app import app, _safe_ipv4  # noqa: E402
 
@@ -59,5 +61,13 @@ check("same-origin Referer allowed (not 403)", r.status_code != 403)
 # GET always allowed
 r = client.get("/")
 check("GET / not blocked", r.status_code == 200)
+
+# --- Credential helpers ---
+from app import set_credentials, verify_credentials  # noqa: E402
+
+set_credentials("admin", "hunter2")
+check("verify_credentials accepts correct pair", verify_credentials("admin", "hunter2"))
+check("verify_credentials rejects wrong password", not verify_credentials("admin", "wrong"))
+check("verify_credentials rejects wrong username", not verify_credentials("root", "hunter2"))
 
 print("\nAll security smoke tests passed.")

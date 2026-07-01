@@ -233,6 +233,14 @@ def load_config():
     if not isinstance(cards, dict):
         cards = {}
 
+    auth = cfg.get("auth") or {}
+    if not isinstance(auth, dict):
+        auth = {}
+    auth_username = (auth.get("username") or "").strip() or None
+    auth_hash = auth.get("password_hash") or None
+    if auth_hash and not isinstance(auth_hash, str):
+        auth_hash = None
+
     return {
         "nodes": valid_nodes,
         "accent": accent,
@@ -240,6 +248,8 @@ def load_config():
         "hold_ms": hold_ms,
         "telegram": telegram,
         "cards": cards,
+        "auth_username": auth_username,
+        "auth_hash": auth_hash,
     }
 
 
@@ -251,6 +261,8 @@ THEME_SCHEME = CONFIG["scheme"]
 HOLD_MS_CFG = CONFIG["hold_ms"]
 TELEGRAM = CONFIG["telegram"]
 CARDS = CONFIG["cards"]
+AUTH_USERNAME = CONFIG["auth_username"]
+AUTH_HASH = CONFIG["auth_hash"]
 
 CARD_DEFAULTS = {
     "alias": None,
@@ -288,6 +300,8 @@ def save_config():
         "nodes": NODES,
         "cards": CARDS,
     }
+    if AUTH_USERNAME and AUTH_HASH:
+        cfg["auth"] = {"username": AUTH_USERNAME, "password_hash": AUTH_HASH}
     tmp = CONFIG_PATH + ".tmp"
     with open(tmp, "w") as f:
         yaml_lib.dump(cfg, f, default_flow_style=False, sort_keys=False)
@@ -295,8 +309,47 @@ def save_config():
     os.replace(tmp, CONFIG_PATH)
 
 
+_hasher = PasswordHasher()  # argon2id defaults are fine for a single-user login
+
+
+def set_credentials(username, password):
+    """Store username + argon2id hash of password in hangar.yaml. Overwrites."""
+    global AUTH_USERNAME, AUTH_HASH
+    username = (username or "").strip() or "admin"
+    if not password:
+        raise ValueError("password required")
+    AUTH_USERNAME = username
+    AUTH_HASH = _hasher.hash(password)
+    save_config()
+
+
+def verify_credentials(username, password):
+    """Constant-time-ish check via argon2 verify. Returns False on any failure."""
+    if not (AUTH_USERNAME and AUTH_HASH and username and password):
+        return False
+    if username.strip() != AUTH_USERNAME:
+        # Still run a dummy verify so timing doesn't leak "user exists".
+        try:
+            _hasher.verify(AUTH_HASH, "wrong")
+        except VerifyMismatchError:
+            pass
+        return False
+    try:
+        return _hasher.verify(AUTH_HASH, password)
+    except VerifyMismatchError:
+        return False
+
+
+def _auth_setup_required():
+    """True when the app is configured (nodes present) but has no auth yet
+    and the operator hasn't set HANGAR_DISABLE_AUTH."""
+    if _truthy(os.environ.get("HANGAR_DISABLE_AUTH", "")):
+        return False
+    return bool(NODES) and not (AUTH_USERNAME and AUTH_HASH)
+
+
 def reload_globals():
-    global CONFIG, NODES, ACCENT, ACCENT_FG, THEME_SCHEME, HOLD_MS_CFG, TELEGRAM
+    global CONFIG, NODES, ACCENT, ACCENT_FG, THEME_SCHEME, HOLD_MS_CFG, TELEGRAM, CARDS, AUTH_USERNAME, AUTH_HASH
     CONFIG = load_config()
     NODES = CONFIG["nodes"]
     ACCENT = CONFIG["accent"]
@@ -304,6 +357,9 @@ def reload_globals():
     THEME_SCHEME = CONFIG["scheme"]
     HOLD_MS_CFG = CONFIG["hold_ms"]
     TELEGRAM = CONFIG["telegram"]
+    CARDS = CONFIG["cards"]
+    AUTH_USERNAME = CONFIG["auth_username"]
+    AUTH_HASH = CONFIG["auth_hash"]
     _invalidate()
 
 
