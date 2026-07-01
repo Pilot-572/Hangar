@@ -23,7 +23,7 @@ ACCENT="${ACCENT:-#3b82f6}"
 REPO="${REPO:-https://github.com/Pilot-572/hangar}"
 # Pin to a release tag so a bad commit on main doesn't own every fresh install.
 # Override with REF=main for development.
-REF="${REF:-v0.1.2.1}"
+REF="${REF:-v0.1.3}"
 
 bold()  { printf "\033[1m%s\033[0m\n" "$*"; }
 info()  { printf "\033[36m• %s\033[0m\n" "$*"; }
