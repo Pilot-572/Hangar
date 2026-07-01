@@ -105,32 +105,39 @@ app.config["TEMPLATES_AUTO_RELOAD"] = True
 app.jinja_env.auto_reload = True
 
 # Persistent session secret. Lives next to hangar.yaml so a restart keeps sessions.
-_SECRET_KEY_PATH = os.path.join(os.path.dirname(os.path.abspath(CONFIG_PATH)) or ".", "secret_key")
-
-
 def _load_or_create_secret_key():
-    try:
-        with open(_SECRET_KEY_PATH, "rb") as f:
-            data = f.read()
-        if len(data) >= 32:
-            return data
-    except FileNotFoundError:
-        pass
-
+    """Persist a 32-byte session secret across restarts. Try the primary path
+    next to hangar.yaml first, then the working directory as a fallback for
+    Docker/dev where /etc/hangar isn't writable. Read AND write use the same
+    candidate list so a restart on the fallback path doesn't silently mint a
+    new key and invalidate every session."""
+    candidates = [
+        os.path.join(os.path.dirname(os.path.abspath(CONFIG_PATH)) or ".", "secret_key"),
+        "secret_key",
+    ]
+    for path in candidates:
+        try:
+            with open(path, "rb") as f:
+                data = f.read()
+            if len(data) >= 32:
+                return data
+        except FileNotFoundError:
+            continue
     data = secrets.token_bytes(32)
-    tmp = _SECRET_KEY_PATH + ".tmp"
-    try:
-        with open(tmp, "wb") as f:
-            f.write(data)
-        os.chmod(tmp, 0o600)
-        os.replace(tmp, _SECRET_KEY_PATH)
-    except (PermissionError, OSError):
-        # Fallback to current directory if primary path is not writable (e.g., test environment)
-        tmp = "secret_key.tmp"
-        with open(tmp, "wb") as f:
-            f.write(data)
-        os.chmod(tmp, 0o600)
-        os.replace(tmp, "secret_key")
+    for path in candidates:
+        try:
+            tmp = path + ".tmp"
+            with open(tmp, "wb") as f:
+                f.write(data)
+            os.chmod(tmp, 0o600)
+            os.replace(tmp, path)
+            return data
+        except (PermissionError, OSError):
+            continue
+    # No writable path anywhere. Return the in-memory key; sessions won't
+    # survive this process, but the app runs. Log via print so systemd
+    # journal captures it.
+    print("WARN: no writable path for secret_key; sessions won't persist across restart", flush=True)
     return data
 
 
@@ -871,7 +878,7 @@ def settings_telegram_test():
 
 @app.route("/login", methods=["GET"])
 def login_page():
-    if (_setup_required() and not (AUTH_USERNAME and AUTH_HASH)) or _auth_setup_required():
+    if _setup_required() or _auth_setup_required():
         return redirect("/")
     if session.get("user"):
         return redirect("/")
@@ -880,7 +887,7 @@ def login_page():
 
 @app.route("/login", methods=["POST"])
 def login_submit():
-    if (_setup_required() and not (AUTH_USERNAME and AUTH_HASH)) or _auth_setup_required():
+    if _setup_required() or _auth_setup_required():
         return redirect("/")
     username = (request.form.get("username") or "").strip()
     password = request.form.get("password") or ""

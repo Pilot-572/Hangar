@@ -71,6 +71,22 @@ check("verify_credentials rejects wrong password", not verify_credentials("admin
 check("verify_credentials rejects wrong username", not verify_credentials("root", "hunter2"))
 
 # --- Auth guard ---
+# Seed a stub node so _setup_required() is False. The prior set_credentials call
+# already persisted the auth block to the temp yaml, so reload_globals will pick
+# up both the seeded node and the persisted auth.
+import yaml as _yaml  # noqa: E402
+import app as _app  # noqa: E402
+
+with open(_app.CONFIG_PATH) as _f:
+    _cfg = _yaml.safe_load(_f) or {}
+_cfg["nodes"] = [{
+    "name": "stub", "url": "https://127.0.0.1:8006",
+    "token_id": "a!b", "token_secret": "c",
+}]
+with open(_app.CONFIG_PATH, "w") as _f:
+    _yaml.dump(_cfg, _f)
+_app.reload_globals()
+
 # fresh app state: credentials still set from prior test; ensure session is empty
 c2 = app.test_client()
 
