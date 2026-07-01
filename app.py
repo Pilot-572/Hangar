@@ -2,16 +2,20 @@
 import ipaddress
 import os
 import re
+import secrets
 import socket
 import time
 import threading
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
+from datetime import timedelta
 
 import requests
 import urllib3
 import yaml as yaml_lib
-from flask import Flask, abort, jsonify, redirect, render_template, request
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError
+from flask import Flask, abort, jsonify, redirect, render_template, request, session, url_for
 from markupsafe import escape
 
 # Common homelab web ports in priority order. First open one wins.
@@ -99,6 +103,44 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 app.jinja_env.auto_reload = True
+
+# Persistent session secret. Lives next to hangar.yaml so a restart keeps sessions.
+_SECRET_KEY_PATH = os.path.join(os.path.dirname(os.path.abspath(CONFIG_PATH)) or ".", "secret_key")
+
+
+def _load_or_create_secret_key():
+    try:
+        with open(_SECRET_KEY_PATH, "rb") as f:
+            data = f.read()
+        if len(data) >= 32:
+            return data
+    except FileNotFoundError:
+        pass
+
+    data = secrets.token_bytes(32)
+    tmp = _SECRET_KEY_PATH + ".tmp"
+    try:
+        with open(tmp, "wb") as f:
+            f.write(data)
+        os.chmod(tmp, 0o600)
+        os.replace(tmp, _SECRET_KEY_PATH)
+    except (PermissionError, OSError):
+        # Fallback to current directory if primary path is not writable (e.g., test environment)
+        tmp = "secret_key.tmp"
+        with open(tmp, "wb") as f:
+            f.write(data)
+        os.chmod(tmp, 0o600)
+        os.replace(tmp, "secret_key")
+    return data
+
+
+app.secret_key = _load_or_create_secret_key()
+app.permanent_session_lifetime = timedelta(days=30)
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=False,  # LAN homelabs run HTTP; Secure would kill every install.
+)
 
 
 @app.before_request
