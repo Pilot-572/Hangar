@@ -74,6 +74,20 @@ Open `http://<host>:8080`. On your phone, use "Add to Home Screen" / "Install ap
 
 > Run Hangar **in an LXC or VM** on your cluster, not on the Proxmox host itself. Keep the hypervisor clean.
 
+## Updating
+
+**Do NOT re-run `install.sh` to update.** Every run creates a new LXC and rotates the Proxmox API token, which breaks whichever install you had before.
+
+For the LXC install path, `git pull` inside the existing container:
+
+```bash
+pct exec <CTID> -- bash -c "cd /opt/hangar && git fetch --tags && git checkout v0.1.3 && /opt/hangar/.venv/bin/pip install -r requirements.txt && systemctl restart hangar"
+```
+
+Swap `v0.1.3` for whichever tag you want. Your settings, login, and Proxmox token stay put, they live in `/etc/hangar/` (outside the repo), so the code changes but the config doesn't.
+
+For the Docker install path, pull the new image tag and recreate the container. Your mounted `hangar.yaml` volume carries settings across.
+
 ## Configuration
 
 ### Environment variables (recommended)
